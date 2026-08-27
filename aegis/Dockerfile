@@ -6,7 +6,7 @@ COPY pyproject.toml ./
 COPY src ./src
 COPY configs ./configs
 COPY web ./web
-RUN uv venv && uv pip install --no-cache .
+RUN uv venv && uv pip install --no-cache -e .
 
 FROM python:3.12-slim
 RUN useradd --uid 10001 --no-create-home aegis
