@@ -1,0 +1,4 @@
+* @platform-owner
+/src/aegis/governance/ @platform-owner @security-owner
+/src/aegis/api/ @platform-owner @security-owner
+/src/aegis/adapters/secrets.py @security-owner

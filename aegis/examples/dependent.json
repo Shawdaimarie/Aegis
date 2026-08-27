@@ -1,0 +1,11 @@
+{
+  "run_id": "example-dependent",
+  "scenario": "dependent",
+  "steps": 200,
+  "governance_cadence": 10,
+  "dataset_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "egress": "allowlist:artifacts.internal",
+  "dependencies": { "edges": [
+    { "source": "base-7b", "target": "example-dependent", "kind": "base-weights", "source_version": "v3.1" }
+  ] }
+}

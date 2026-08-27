@@ -1,0 +1,8 @@
+{
+  "run_id": "example-independent",
+  "scenario": "independent",
+  "steps": 200,
+  "governance_cadence": 10,
+  "dataset_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "egress": "none"
+}

@@ -1,0 +1,42 @@
+# Default operational boundaries. Loaded read-only. Loosening any value is itself audited.
+version: 1
+boundaries:
+  - id: gpu-hours-ceiling
+    title: GPU-hour ceiling per run
+    severity: HALT
+    checkpoints: [step, post_run]
+    predicate: { path: resources.gpu_hours, op: ">", value: 500 }
+    owner: platform-security
+    rationale: Uncapped compute is an infrastructure-integrity risk and a cost-control failure.
+
+  - id: loss-divergence
+    title: Training loss diverged
+    severity: HALT
+    checkpoints: [step]
+    predicate: { path: metrics.loss, op: ">", value: 10000 }
+    owner: ml-platform
+    rationale: A diverged run wastes compute and can corrupt downstream dependent models.
+
+  - id: dataset-hash-required
+    title: Dataset content hash must be declared
+    severity: BLOCKING
+    checkpoints: [pre_run]
+    predicate: { path: tags.dataset_hash, op: missing }
+    owner: reproducibility
+    rationale: Runs without a content-addressed dataset cannot be reproduced.
+
+  - id: egress-declared
+    title: Network egress must be explicitly declared
+    severity: BLOCKING
+    checkpoints: [pre_run]
+    predicate: { path: tags.egress, op: missing }
+    owner: platform-security
+    rationale: Undeclared egress is the primary exfiltration vector for training pipelines.
+
+  - id: memory-high-watermark
+    title: Memory above 85% of allocation
+    severity: ADVISORY
+    checkpoints: [step]
+    predicate: { path: resources.memory_fraction, op: ">", value: 0.85 }
+    owner: ml-platform
+    rationale: Early warning before an out-of-memory failure destroys the run.

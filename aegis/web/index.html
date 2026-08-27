@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis · Governance console</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>Aegis</div>
+  <div class="bar-right">
+    <label class="field inline">
+      <span>API token</span>
+      <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token, kept in memory only">
+    </label>
+    <span id="conn" class="status" aria-live="polite">Not connected</span>
+  </div>
+</header>
+
+<main class="grid">
+  <aside class="rail" aria-labelledby="rail-h">
+    <h2 id="rail-h" class="eyebrow">Boundaries</h2>
+    <p class="hint">Loaded read-only from configuration. Nothing here can be edited at runtime.</p>
+    <ul id="boundaries" class="blist"><li class="empty">Connect to load the boundary set.</li></ul>
+  </aside>
+
+  <section class="work">
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="evaluate">Evaluate</button>
+      <button role="tab" aria-selected="false" data-tab="simulate">Simulate run</button>
+      <button role="tab" aria-selected="false" data-tab="audit">Audit chain</button>
+    </nav>
+
+    <div id="tab-evaluate" role="tabpanel">
+      <p class="lede">Check a run snapshot against every boundary at one checkpoint.</p>
+      <div class="form">
+        <label class="field"><span>Checkpoint</span>
+          <select id="ev-checkpoint"><option>pre_run</option><option>step</option><option>post_run</option></select></label>
+        <label class="field"><span>Run id</span><input id="ev-run" value="demo-run"></label>
+        <label class="field"><span>Scenario</span>
+          <select id="ev-scenario"><option>independent</option><option>dependent</option></select></label>
+        <label class="field"><span>Step</span><input id="ev-step" type="number" min="0" value="0"></label>
+        <label class="field wide"><span>Metrics (key=value, comma separated)</span><input id="ev-metrics" placeholder="loss=0.42"></label>
+        <label class="field wide"><span>Resources</span><input id="ev-resources" placeholder="gpu_hours=12, memory_fraction=0.7"></label>
+        <label class="field wide"><span>Tags</span><input id="ev-tags" placeholder="dataset_hash=sha256:…, egress=none"></label>
+        <button id="ev-go" class="primary">Evaluate</button>
+      </div>
+      <output id="ev-out" class="result" for="ev-go"></output>
+    </div>
+
+    <div id="tab-simulate" role="tabpanel" hidden>
+      <p class="lede">Run a synthetic training loop under governance and receive its manifest.</p>
+      <div class="form">
+        <label class="field"><span>Run id</span><input id="sim-run" value="sim-001"></label>
+        <label class="field"><span>Scenario</span>
+          <select id="sim-scenario"><option>independent</option><option>dependent</option></select></label>
+        <label class="field"><span>Root seed</span><input id="sim-seed" type="number" min="0" value="42"></label>
+        <label class="field"><span>Steps</span><input id="sim-steps" type="number" min="1" value="50"></label>
+        <label class="field"><span>Loss decay per step</span><input id="sim-decay" type="number" step="0.01" min="0.01" max="1" value="0.97"></label>
+        <label class="field"><span>GPU hours per step</span><input id="sim-gpu" type="number" step="0.01" min="0" value="0.5"></label>
+        <label class="field wide"><span>Dataset hash</span><input id="sim-ds" value="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></label>
+        <label class="field"><span>Egress</span><input id="sim-egress" value="none"></label>
+        <label class="field"><span>Git commit</span><input id="sim-git" value="0000000"></label>
+        <button id="sim-go" class="primary">Run simulation</button>
+      </div>
+      <output id="sim-out" class="result" for="sim-go"></output>
+    </div>
+
+    <div id="tab-audit" role="tabpanel" hidden>
+      <p class="lede">Every evaluation is appended to a hash chain. Each segment shows the first six characters of a record id; the line to its left is the link to the previous record.</p>
+      <div class="chainbar">
+        <button id="audit-refresh">Refresh</button>
+        <span id="audit-meta" class="status"></span>
+      </div>
+      <div id="chain" class="chain" aria-live="polite"></div>
+      <table id="audit-table" class="ledger">
+        <thead><tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Decision</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script src="console.js"></script>
+</body>
+</html>

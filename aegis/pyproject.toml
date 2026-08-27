@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aegis"
+version = "0.1.0"
+description = "Governed, reproducible AI training and access platform."
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "pydantic>=2.8",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "structlog>=24.1",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3", "pytest-cov>=5.0", "hypothesis>=6.110", "httpx>=0.27",
+  "ruff>=0.6", "mypy>=1.11", "bandit>=1.7", "pip-audit>=2.7",
+  "import-linter>=2.0", "interrogate>=1.7", "mutmut>=2.5",
+  "types-PyYAML",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aegis"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E","F","W","I","N","UP","B","A","C4","SIM","PT","RET","S","PL","RUF","D","ANN","T20","ASYNC"]
+ignore = ["D203","D213"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101","D","ANN","PLR2004"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --cov=aegis --cov-branch --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["src/aegis"]
+
+[tool.interrogate]
+fail-under = 95
+ignore-init-method = true
+exclude = ["tests"]
+
+[tool.importlinter]
+root_package = "aegis"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "core is pure"
+type = "forbidden"
+source_modules = ["aegis.core"]
+forbidden_modules = ["aegis.adapters", "aegis.api", "aegis.training", "aegis.governance", "fastapi", "uvicorn", "yaml"]
+
+[[tool.importlinter.contracts]]
+name = "governance does not depend on api or adapters"
+type = "forbidden"
+source_modules = ["aegis.governance"]
+forbidden_modules = ["aegis.api", "aegis.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "layers"
+type = "layers"
+layers = ["aegis.api", "aegis.adapters", "aegis.training", "aegis.governance", "aegis.core"]
