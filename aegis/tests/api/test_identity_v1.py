@@ -159,24 +159,18 @@ def test_delegation_endpoint_prevents_scope_broadening(client: TestClient) -> No
         "max_uses": 1,
         "context_constraints": {"environment": "production", "region": "us"},
     }
-    child = client.post(
-        "/v1/identity/capabilities/delegate", json=child_body, headers=AUTH
-    )
+    child = client.post("/v1/identity/capabilities/delegate", json=child_body, headers=AUTH)
     assert child.status_code == 201
     assert child.json()["grant"]["delegation_depth"] == 1
 
     broadened = dict(child_body)
     broadened["resources"] = ["ledger://acme/**"]
-    rejected = client.post(
-        "/v1/identity/capabilities/delegate", json=broadened, headers=AUTH
-    )
+    rejected = client.post("/v1/identity/capabilities/delegate", json=broadened, headers=AUTH)
     assert rejected.status_code == 422
 
 
 def test_invalid_capability_fails_closed_with_reason_code(client: TestClient) -> None:
-    issued = client.post(
-        "/v1/identity/capabilities", json=issue_body(), headers=AUTH
-    ).json()
+    issued = client.post("/v1/identity/capabilities", json=issue_body(), headers=AUTH).json()
     token = issued["token"]
     tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
     body = authorization_body(tampered, request_id="request-api-invalid")
