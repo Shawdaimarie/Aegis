@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aegis"
-version = "0.1.0"
-description = "Governed, reproducible AI training and access platform."
+version = "0.2.0"
+description = "Zero-trust identity, delegated authorization, governance, and reproducible AI operations."
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 dependencies = [
@@ -18,9 +18,17 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.3", "pytest-cov>=5.0", "hypothesis>=6.110", "httpx>=0.27",
-  "ruff>=0.6", "mypy>=1.11", "bandit>=1.7", "pip-audit>=2.7",
-  "import-linter>=2.0", "interrogate>=1.7", "mutmut>=2.5",
+  "pytest>=8.3",
+  "pytest-cov>=5.0",
+  "hypothesis>=6.110",
+  "httpx>=0.27",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "bandit>=1.7",
+  "pip-audit>=2.7",
+  "import-linter>=2.0",
+  "interrogate>=1.7",
+  "mutmut>=2.5",
   "types-PyYAML",
 ]
 
@@ -37,7 +45,7 @@ select = ["E","F","W","I","N","UP","B","A","C4","SIM","PT","RET","S","PL","RUF",
 ignore = ["D203","D213"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101","D","ANN","PLR2004"]
+"tests/**" = ["S101","S105","S106","D","ANN","PLR2004"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -68,15 +76,21 @@ include_external_packages = true
 name = "core is pure"
 type = "forbidden"
 source_modules = ["aegis.core"]
-forbidden_modules = ["aegis.adapters", "aegis.api", "aegis.training", "aegis.governance", "fastapi", "uvicorn", "yaml"]
+forbidden_modules = ["aegis.adapters", "aegis.api", "aegis.training", "aegis.identity", "aegis.governance", "fastapi", "uvicorn", "yaml"]
 
 [[tool.importlinter.contracts]]
-name = "governance does not depend on api or adapters"
+name = "governance does not depend on api, adapters, training, or identity"
 type = "forbidden"
 source_modules = ["aegis.governance"]
-forbidden_modules = ["aegis.api", "aegis.adapters"]
+forbidden_modules = ["aegis.api", "aegis.adapters", "aegis.training", "aegis.identity"]
+
+[[tool.importlinter.contracts]]
+name = "identity does not depend on api, adapters, or training"
+type = "forbidden"
+source_modules = ["aegis.identity"]
+forbidden_modules = ["aegis.api", "aegis.adapters", "aegis.training"]
 
 [[tool.importlinter.contracts]]
 name = "layers"
 type = "layers"
-layers = ["aegis.api", "aegis.adapters", "aegis.training", "aegis.governance", "aegis.core"]
+layers = ["aegis.api", "aegis.adapters", "aegis.training", "aegis.identity", "aegis.governance", "aegis.core"]
