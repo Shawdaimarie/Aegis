@@ -1,18 +1,26 @@
-# fly launch --no-deploy && fly secrets set AEGIS_API_TOKEN=$(openssl rand -base64 32) && fly deploy
+# Before deploy:
+# fly launch --no-deploy
+# fly secrets set AEGIS_API_TOKEN=$(openssl rand -base64 32)
+# fly secrets set AEGIS_CAPABILITY_SIGNING_KEY=$(openssl rand -base64 48)
+# fly deploy
 app = "aegis-console"
 primary_region = "den"
+
 [build]
   dockerfile = "Dockerfile"
+
 [http_service]
   internal_port = 8000
   force_https = true
   auto_stop_machines = true
   min_machines_running = 0
+
   [http_service.checks]
     [http_service.checks.health]
       path = "/healthz"
       interval = "30s"
       timeout = "5s"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
