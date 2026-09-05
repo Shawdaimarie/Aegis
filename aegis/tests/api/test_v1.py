@@ -9,6 +9,7 @@ H = "sha256:" + "b" * 64
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv("AEGIS_API_TOKEN", "test-token")
+    monkeypatch.setenv("AEGIS_CAPABILITY_SIGNING_KEY", "k" * 32)
     return TestClient(create_app())
 
 
