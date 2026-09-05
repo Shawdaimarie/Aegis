@@ -1,4 +1,4 @@
-"""FastAPI application factory for v1."""
+"""FastAPI application factory for the Aegis v1 control plane."""
 
 import time
 from collections import defaultdict, deque
@@ -12,18 +12,30 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from aegis import __version__
-from aegis.api.v1.security import Principal, new_request_id, require_principal
-from aegis.core.errors import ConfigurationError, GovernanceViolationError
+from aegis.adapters.secrets import get_secret
+from aegis.api.v1.security import Principal as ApiPrincipal
+from aegis.api.v1.security import new_request_id, require_principal
+from aegis.core.errors import ConfigurationError, GovernanceViolationError, IntegrityError
 from aegis.core.types import Checkpoint, RunContext
 from aegis.governance.audit import AuditLog
 from aegis.governance.engine import PolicyEngine
 from aegis.governance.loader import load_boundaries
+from aegis.identity import (
+    ApprovalRequest,
+    AuthorizationRequest,
+    CapabilityCodec,
+    DelegateCapabilityRequest,
+    IdentityControlPlane,
+    InspectCapabilityRequest,
+    IssueCapabilityRequest,
+    RevokeCapabilityRequest,
+)
 from aegis.training.runner import Runner, RunSpec
 
 MAX_BODY_BYTES = 256 * 1024
 RATE_LIMIT_PER_MINUTE = 120
 RATE_WINDOW_SECONDS = 60
-Auth = Annotated[Principal, Depends(require_principal)]
+Auth = Annotated[ApiPrincipal, Depends(require_principal)]
 
 
 class EvaluateRequest(BaseModel):
@@ -36,7 +48,7 @@ class EvaluateRequest(BaseModel):
 
 
 class SimulateRequest(BaseModel):
-    """Body for POST /v1/runs/simulate: a synthetic run for validating governance end-to-end."""
+    """Body for POST /v1/runs/simulate."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -75,14 +87,19 @@ def _install_guard(app: FastAPI) -> None:
         return response
 
 
-def create_app(governance_path: Path | None = None) -> FastAPI:
-    """Build the application with a read-only boundary set."""
-    path = (
-        governance_path or Path(__file__).resolve().parents[4] / "configs/governance/default.yaml"
-    )
+def create_app(
+    governance_path: Path | None = None,
+    *,
+    capability_signing_key: str | None = None,
+) -> FastAPI:
+    """Build the API with immutable governance and identity control planes."""
+    default_path = Path(__file__).resolve().parents[4] / "configs/governance/default.yaml"
+    path = governance_path or default_path
     audit = AuditLog()
     engine = PolicyEngine(load_boundaries(path), audit)
     runner = Runner(engine)
+    signing_key = capability_signing_key or get_secret("AEGIS_CAPABILITY_SIGNING_KEY")
+    identity = IdentityControlPlane(CapabilityCodec(signing_key), audit)
     app = FastAPI(
         title="Aegis Platform API",
         version=__version__,
@@ -90,6 +107,8 @@ def create_app(governance_path: Path | None = None) -> FastAPI:
         docs_url="/v1/docs",
         openapi_url="/v1/openapi.json",
     )
+    app.state.identity_control_plane = identity
+    app.state.audit_log = audit
 
     _install_guard(app)
 
@@ -105,31 +124,31 @@ def create_app(governance_path: Path | None = None) -> FastAPI:
 
     @app.get("/v1/governance/boundaries")
     async def boundaries(_: Auth) -> list[dict[str, object]]:
-        """The immutable boundary set currently enforced."""
+        """Return the immutable boundary set currently enforced."""
         return [b.model_dump(mode="json") for b in engine.boundaries]
 
     @app.post("/v1/governance/evaluate")
     async def evaluate(body: EvaluateRequest, principal: Auth) -> dict[str, object]:
-        """Evaluate a run snapshot at one checkpoint; never mutates any run."""
-        d = engine.evaluate(body.checkpoint, body.context, raise_on_block=False)
+        """Evaluate a run snapshot at one checkpoint without mutating a run."""
+        decision = engine.evaluate(body.checkpoint, body.context, raise_on_block=False)
         audit.append(principal.subject, "api:evaluate", f"run:{body.context.run_id}", "ok")
         return {
-            "checkpoint": d.checkpoint,
-            "allowed": d.allowed,
-            "advisories": list(d.advisories),
-            "blocked_by": d.blocked_by,
-            "halted_by": d.halted_by,
+            "checkpoint": decision.checkpoint,
+            "allowed": decision.allowed,
+            "advisories": list(decision.advisories),
+            "blocked_by": decision.blocked_by,
+            "halted_by": decision.halted_by,
         }
 
     @app.post("/v1/runs/simulate", status_code=status.HTTP_201_CREATED)
     async def simulate(body: SimulateRequest, principal: Auth) -> dict[str, object]:
         """Execute a synthetic run under governance and return its manifest."""
 
-        def step(i: int, _: object) -> dict[str, float]:
-            """Geometric loss decay with linear GPU-hour accrual."""
+        def step(index: int, _: object) -> dict[str, float]:
+            """Produce deterministic synthetic metrics for API validation."""
             return {
-                "loss": body.loss_start * (body.loss_decay**i),
-                "res:gpu_hours": body.gpu_hours_per_step * i,
+                "loss": body.loss_start * (body.loss_decay**index),
+                "res:gpu_hours": body.gpu_hours_per_step * index,
             }
 
         try:
@@ -146,6 +165,95 @@ def create_app(governance_path: Path | None = None) -> FastAPI:
             "manifest": manifest.model_dump(mode="json"),
             "manifest_id": manifest.manifest_id,
         }
+
+    @app.post("/v1/identity/capabilities", status_code=status.HTTP_201_CREATED)
+    async def issue_capability(body: IssueCapabilityRequest, principal: Auth) -> dict[str, object]:
+        """Issue a short-lived root capability through the administrative API."""
+        try:
+            issued = identity.issue(body)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        audit.append(
+            principal.subject,
+            "api:capability:issue",
+            f"capability:{issued.grant.capability_id}",
+            "ok",
+        )
+        return issued.model_dump(mode="json")
+
+    @app.post("/v1/identity/capabilities/delegate", status_code=status.HTTP_201_CREATED)
+    async def delegate_capability(
+        body: DelegateCapabilityRequest, principal: Auth
+    ) -> dict[str, object]:
+        """Issue a strictly narrower delegated capability."""
+        try:
+            issued = identity.delegate(body)
+        except (IntegrityError, ValueError) as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        audit.append(
+            principal.subject,
+            "api:capability:delegate",
+            f"capability:{issued.grant.capability_id}",
+            "ok",
+        )
+        return issued.model_dump(mode="json")
+
+    @app.post("/v1/identity/capabilities/inspect")
+    async def inspect_capability(
+        body: InspectCapabilityRequest, principal: Auth
+    ) -> dict[str, object]:
+        """Validate and decode a capability without consuming it."""
+        try:
+            grant = identity.inspect(body.token)
+        except IntegrityError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        audit.append(
+            principal.subject,
+            "api:capability:inspect",
+            f"capability:{grant.capability_id}",
+            "ok",
+        )
+        return grant.model_dump(mode="json")
+
+    @app.post("/v1/identity/approvals", status_code=status.HTTP_201_CREATED)
+    async def approve_capability(body: ApprovalRequest, principal: Auth) -> dict[str, object]:
+        """Create a human approval bound to one exact authorization intent."""
+        try:
+            approval = identity.approve(body)
+        except (IntegrityError, ValueError) as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        audit.append(
+            principal.subject,
+            "api:capability:approve",
+            f"capability:{approval.capability_id}",
+            "ok",
+        )
+        return approval.model_dump(mode="json")
+
+    @app.post("/v1/identity/revocations", status_code=status.HTTP_204_NO_CONTENT)
+    async def revoke_capability(body: RevokeCapabilityRequest, principal: Auth) -> Response:
+        """Revoke a capability and its registered descendants."""
+        identity.revoke(body)
+        audit.append(
+            principal.subject,
+            "api:capability:revoke",
+            f"capability:{body.capability_id}",
+            "ok",
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @app.post("/v1/authorization/check")
+    async def authorize(body: AuthorizationRequest, principal: Auth) -> dict[str, object]:
+        """Evaluate and consume a capability when the request is allowed."""
+        decision = identity.authorize(body)
+        audit.append(
+            principal.subject,
+            "api:authorization:check",
+            f"request:{body.request_id}",
+            "allow" if decision.allowed else "deny",
+            {"reason": decision.reason.value},
+        )
+        return decision.model_dump(mode="json")
 
     @app.get("/v1/audit")
     async def audit_tail(_: Auth, limit: int = 50) -> dict[str, object]:
