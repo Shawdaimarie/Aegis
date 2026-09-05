@@ -189,9 +189,7 @@ def test_not_before_expiration_and_revocation(plane, principals, clock):
     assert early.reason is DecisionReason.NOT_YET_VALID
 
     clock.value += 31
-    active = plane.authorize(
-        auth_request(future.token, principals, request_id="request-active")
-    )
+    active = plane.authorize(auth_request(future.token, principals, request_id="request-active"))
     assert active.allowed
 
     clock.value += 600
