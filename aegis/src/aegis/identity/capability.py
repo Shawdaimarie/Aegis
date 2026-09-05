@@ -70,8 +70,7 @@ def validate_monotonic_delegation(parent: CapabilityGrant, child: CapabilityGran
     if not set(child.actions).issubset(parent.actions):
         failures.append("actions")
     broadens_resource = any(
-        not request_resource_allowed(parent.resources, resource)
-        for resource in child.resources
+        not request_resource_allowed(parent.resources, resource) for resource in child.resources
     )
     if broadens_resource:
         failures.append("resources")
