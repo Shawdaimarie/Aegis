@@ -32,3 +32,7 @@ class GovernanceViolationError(PlatformError):
 
 class IntegrityError(PlatformError):
     """A hash, signature, or chain check failed."""
+
+
+class StateUnavailableError(PlatformError):
+    """Required authorization state cannot be safely read or committed."""

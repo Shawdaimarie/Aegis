@@ -41,8 +41,8 @@ It is still a draft reference system. The next production milestones are:
 
 1. Establish named human identities with phishing-resistant authentication and
    constrained workload identities; preserve tenant boundaries and permission checks.
-2. Move capability revocation, replay, approvals and use budgets to durable,
-   consistently enforced storage. Prove behavior across restart and concurrent workers.
+2. Validate and operate the new durable authorization ledger: provision private storage,
+   test recovery, monitor capacity and plan migration before multi-host growth.
 3. Integrate authority checks and cancellation at real executors, immediately before
    side effects. Do not assume a UI switch alone controls an external system.
 4. Establish independent audit retention, tested backups/restores, incident ownership,
@@ -51,8 +51,9 @@ It is still a draft reference system. The next production milestones are:
    migration and rollback plans before changing shared contracts or storage.
 
 These are acceptance criteria for future work, not statements that those capabilities
-are already deployed. SQLite switch persistence does not make the separate in-memory
-capability ledger durable. Current details remain in [operator controls](OPERATOR_CONTROLS.md)
+are already deployed. The HTTP API now requires a separate
+[durable capability ledger](DURABLE_AUTHORIZATION.md); the governance audit still
+needs independent retention. Current details remain in [operator controls](OPERATOR_CONTROLS.md)
 and [the human approval boundary](HUMAN_APPROVAL_BOUNDARY.md).
 
 Longevity comes from continuous maintenance, succession of accountable owners,

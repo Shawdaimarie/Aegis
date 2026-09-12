@@ -13,11 +13,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from aegis import __version__
+from aegis.adapters.authorization_store import SQLiteAuthorizationStore
 from aegis.adapters.secrets import get_secret
 from aegis.api.v1.controls import control_store, install_control_routes
 from aegis.api.v1.security import Principal as ApiPrincipal
 from aegis.api.v1.security import new_request_id, require_approver, require_principal
-from aegis.core.errors import ConfigurationError, GovernanceViolationError, IntegrityError
+from aegis.core.errors import (
+    ConfigurationError,
+    GovernanceViolationError,
+    IntegrityError,
+    StateUnavailableError,
+)
 from aegis.core.types import Checkpoint, RunContext
 from aegis.governance.audit import AuditLog
 from aegis.governance.engine import PolicyEngine
@@ -124,6 +130,16 @@ def _install_guard(app: FastAPI) -> None:
         return response
 
 
+def _durable_identity(audit: AuditLog, signing_key: str) -> IdentityControlPlane:
+    """Bind API issuance and authorization to an explicitly provisioned ledger."""
+    ledger_path = Path(get_secret("AEGIS_AUTHORIZATION_DB_PATH"))
+    if ledger_path.resolve() == Path(get_secret("AEGIS_CONTROL_DB_PATH")).resolve():
+        raise ConfigurationError("authorization and control databases must be separate files")
+    return IdentityControlPlane(
+        CapabilityCodec(signing_key), audit, state=SQLiteAuthorizationStore(ledger_path)
+    )
+
+
 def create_app(
     governance_path: Path | None = None,
     *,
@@ -136,7 +152,7 @@ def create_app(
     engine = PolicyEngine(load_boundaries(path), audit)
     runner = Runner(engine)
     signing_key = capability_signing_key or get_secret("AEGIS_CAPABILITY_SIGNING_KEY")
-    identity = IdentityControlPlane(CapabilityCodec(signing_key), audit)
+    identity = _durable_identity(audit, signing_key)
     app = FastAPI(
         title="Aegis Platform API",
         version=__version__,
@@ -148,6 +164,11 @@ def create_app(
     app.state.audit_log = audit
 
     _install_guard(app)
+
+    @app.exception_handler(StateUnavailableError)
+    async def unavailable_state(_: Request, __: StateUnavailableError) -> JSONResponse:
+        """Never expose database paths or authorize against unavailable state."""
+        return JSONResponse({"detail": "authorization state unavailable"}, status_code=503)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(_: Request, exc: RequestValidationError) -> JSONResponse:

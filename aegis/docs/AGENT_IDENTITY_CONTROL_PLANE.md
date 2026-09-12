@@ -191,7 +191,8 @@ A production implementation should add:
 - managed key rotation through KMS or HSM-backed issuers;
 - workload identity such as SPIFFE-compatible identities or equivalent cloud
   workload credentials;
-- durable, strongly consistent replay, revocation, approval, and budget state;
+- reviewed operation of the durable single-host ledger and a transactional migration
+  plan before multi-host deployment;
 - issuer and policy-administrator separation of duties;
 - external audit anchoring and retention controls;
 - privacy classification and redaction rules;

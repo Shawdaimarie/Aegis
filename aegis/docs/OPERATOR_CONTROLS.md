@@ -67,9 +67,9 @@ Conflicting edits return 409; reconnect and review before retrying. The browser 
 optimistically claims an unconfirmed change succeeded. Changes serialize with new
 authorization decisions across processes sharing the same SQLite file.
 
-Settings and their change history survive application restarts. This does **not**
-make the separate in-memory capability revocations, replay identifiers, approvals or
-use budgets durable. Those remain production blockers from the authentication review.
+Settings and their change history survive application restarts. Capability revocations,
+replay identifiers, approvals and use budgets now persist in a separate mandatory
+[authorization ledger](DURABLE_AUTHORIZATION.md). Configure both paths before startup.
 Database owners can alter local history: independent audit retention is still needed.
 The switch history is distinct from the existing in-memory governance audit tab.
 

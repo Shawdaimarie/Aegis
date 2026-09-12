@@ -24,6 +24,11 @@ Start the API and console:
 ```bash
 export AEGIS_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export AEGIS_CAPABILITY_SIGNING_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+# First setup only: initialization refuses to overwrite an existing ledger.
+mkdir -p -m 700 .local-state
+export AEGIS_AUTHORIZATION_DB_PATH="$PWD/.local-state/authorization.sqlite3"
+export AEGIS_CONTROL_DB_PATH="$PWD/.local-state/controls.sqlite3"
+uv run python -m aegis.adapters.authorization_store "$AEGIS_AUTHORIZATION_DB_PATH"
 make serve
 ```
 
@@ -142,8 +147,9 @@ CodeQL and Dependabot are configured independently.
 
 ## Scope boundary
 
-The HMAC codec and in-memory authorization state make the security model
-inspectable without external infrastructure. They are not substitutes for
+The HTTP API requires the [durable authorization ledger](docs/DURABLE_AUTHORIZATION.md).
+The library retains an in-memory reference implementation for examples and tests.
+The HMAC codec and single-host SQLite ledger are not substitutes for
 asymmetric workload identity, managed key rotation, a hardware-backed issuer,
 durable distributed revocation, or independent audit anchoring.
 

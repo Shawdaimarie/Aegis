@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 import pytest
 
+from aegis.adapters.authorization_store import SQLiteAuthorizationStore, initialize_database
 from aegis.core.errors import IntegrityError
 from aegis.governance.audit import AuditLog
 from aegis.identity import (
@@ -39,9 +40,14 @@ def audit() -> AuditLog:
     return AuditLog()
 
 
-@pytest.fixture
-def plane(clock: MutableClock, audit: AuditLog) -> IdentityControlPlane:
-    return IdentityControlPlane(CapabilityCodec("k" * 32), audit, clock=clock)
+@pytest.fixture(params=["memory", "sqlite"])
+def plane(clock: MutableClock, audit: AuditLog, request, tmp_path) -> IdentityControlPlane:
+    state = None
+    if request.param == "sqlite":
+        path = tmp_path / "contract.sqlite3"
+        initialize_database(path)
+        state = SQLiteAuthorizationStore(path, clock=clock)
+    return IdentityControlPlane(CapabilityCodec("k" * 32), audit, clock=clock, state=state)
 
 
 @pytest.fixture

@@ -53,10 +53,10 @@ network, cloud account, or protected business application.
 | Token tampering | Payload scope is edited | HMAC-SHA256 over header and canonical payload; constant-time verification | Shared HMAC key lets any verifier mint tokens |
 | Duplicate-key ambiguity | JSON parsers interpret duplicated fields differently | Duplicate keys are rejected | Other encodings require equivalent canonicalization rules |
 | Expired authority | Old authority is reused | Not-before and expiration checks | Trusted time and clock-skew policy are deployment concerns |
-| Request replay | A previously allowed operation is resubmitted | Unique request identifier stored on successful authorization | In-memory ledger is process-local and bounded |
+| Request replay | A previously allowed operation is resubmitted | Unique request identifier stored on successful authorization | HTTP ledger is durable and capacity-limited; library memory store remains local |
 | Use-budget amplification | Parent and child both spend the full parent budget | Child budget is reserved from the parent | Durable distributed ledgers need strong consistency |
 | Approval substitution | Approval for one action authorizes another | Approval binds to a fingerprint of actor, tenant, audience, action, resource, and context | External approver authentication is a separate control |
-| Approval replay | One approval is used repeatedly | Approval expiration and maximum-use count | Process restart loses reference approval state |
+| Approval replay | One approval is used repeatedly | Approval expiration and maximum-use count | HTTP approval state survives restart; stale backups require controlled recovery |
 | Revoked-child survival | Parent is revoked but child continues | Registered descendant revocation cascade | Children unknown to the local state cannot be discovered |
 | State exhaustion | Replay ledger reaches capacity | Fail-closed `state_unavailable` decision | A production store needs capacity planning and backpressure |
 | Policy bypass | Client ignores a deny decision | API returns explicit deny and audits the event | Enforcement must occur at or before the protected tool boundary |
@@ -113,12 +113,13 @@ library, but every verifier holding the key can mint authority. Production
 systems should prefer asymmetric signatures or a remote signing service with
 managed and hardware-backed keys.
 
-### Process-local state
+### State persistence and recovery
 
-Revocation, approvals, replays, descendant relationships, and use counts are
-stored in memory. Restarting or horizontally scaling the process loses or
-fragments those controls. Production requires a durable, strongly consistent
-store with explicit partition and outage behavior.
+The HTTP API persists revocation, approvals, replay markers, descendant relationships
+and use counts in a required single-host ledger. Direct library examples can still
+use process-local memory. Multi-host scaling requires a reviewed transactional store
+and explicit partition behavior; restoring old backups requires containment and
+signing-key rotation because later revocations or consumption may be absent.
 
 ### Root issuance policy
 
@@ -164,3 +165,13 @@ append-only storage and anchor digests outside the process.
 - [ ] Test partial outages and state-store partitions.
 - [ ] Establish break-glass access with approval, expiry, audit, and review.
 - [ ] Perform independent threat modeling and penetration testing.
+
+## Durable HTTP ledger update
+
+The HTTP API now requires [durable authorization state](DURABLE_AUTHORIZATION.md).
+The memory-store limitations above remain relevant to direct library usage, not the
+new HTTP default. API workers on one host share issuance registration, revocations,
+replay markers, delegation budgets and approval use counts transactionally. New or
+missing ledgers do not silently recreate authority. Host compromise, stale-backup
+rollback, multi-host coordination and independent audit retention remain operational
+risks; durable storage does not prove human presence or protect a compromised issuer.

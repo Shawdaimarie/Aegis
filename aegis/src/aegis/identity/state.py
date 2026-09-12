@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import Lock
+from typing import Protocol
 
 from aegis.identity.models import ApprovalGrant, DecisionReason
 
@@ -19,6 +20,7 @@ class ConsumeRequest:
     approval_required: bool
     approval_id: str | None
     intent_fingerprint: str
+    expires_at: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +30,45 @@ class ConsumeResult:
     allowed: bool
     reason: DecisionReason
     remaining_uses: int
+
+
+class AuthorizationStore(Protocol):
+    """State contract shared by the reference memory store and durable adapters."""
+
+    def register_capability(self, capability_id: str, max_uses: int) -> None:
+        """Record a root issuance before its token is returned."""
+        ...
+
+    def revoke(self, capability_id: str, reason: str) -> None:
+        """Revoke a capability and its descendants."""
+        ...
+
+    def register_delegation(
+        self,
+        *,
+        parent_capability_id: str,
+        child_capability_id: str,
+        reserved_uses: int,
+        parent_max_uses: int,
+    ) -> int:
+        """Atomically reserve parent budget and register the child."""
+        ...
+
+    def is_revoked(self, capability_id: str) -> bool:
+        """Read the revocation decision."""
+        ...
+
+    def remaining_uses(self, capability_id: str, max_uses: int) -> int:
+        """Read the remaining registered budget."""
+        ...
+
+    def store_approval(self, approval: ApprovalGrant) -> None:
+        """Persist an exact-intent approval."""
+        ...
+
+    def consume(self, request: ConsumeRequest) -> ConsumeResult:
+        """Atomically enforce and consume authority."""
+        ...
 
 
 class AuthorizationState:
@@ -50,6 +91,11 @@ class AuthorizationState:
         self._children: dict[str, set[str]] = {}
         self._request_ids: set[str] = set()
         self._max_request_ids = max_request_ids
+
+    def register_capability(self, capability_id: str, max_uses: int) -> None:
+        """Record initial usage for the reference in-memory implementation."""
+        with self._lock:
+            self._uses.setdefault(capability_id, 0)
 
     def revoke(self, capability_id: str, reason: str) -> None:
         """Revoke a capability and every registered descendant idempotently."""

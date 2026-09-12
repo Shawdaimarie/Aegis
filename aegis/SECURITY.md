@@ -51,6 +51,13 @@ URLs, expose them to browser code, or reuse them across environments. Production
 systems should store issuer keys in a managed key service or HSM and should use
 asymmetric verification so authorization services cannot also mint authority.
 
+## Required persistent state
+
+Configure distinct `AEGIS_AUTHORIZATION_DB_PATH` and `AEGIS_CONTROL_DB_PATH` files.
+Explicitly initialize the authorization ledger before startup. Missing, corrupt or
+unregistered authority fails closed. See [durable authorization](docs/DURABLE_AUTHORIZATION.md)
+for rollout, backup/restore and remaining operational limits.
+
 ## Dependency and build security
 
 - Dependencies are resolved from `pyproject.toml` and should be locked before a
@@ -65,7 +72,9 @@ asymmetric verification so authorization services cannot also mint authority.
 ## Known limitations
 
 - Capability signing uses a reference HMAC codec.
-- Replay, revocation, approval, delegation, and use state are process-local.
+- HTTP replay, revocation, approval, delegation and use state persist in a required
+  single-host SQLite ledger. The library memory store remains non-durable; stale backup
+  restoration requires controlled recovery and signing-key rotation.
 - The administrative API uses a shared bearer-token bootstrap.
 - The local audit chain does not prove log completeness or prevent total loss.
 - Tenant and principal enrollment are external responsibilities.

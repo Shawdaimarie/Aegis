@@ -27,7 +27,7 @@ from aegis.identity.models import (
     IssuedCapability,
     RevokeCapabilityRequest,
 )
-from aegis.identity.state import AuthorizationState, ConsumeRequest
+from aegis.identity.state import AuthorizationState, AuthorizationStore, ConsumeRequest
 
 Clock = Callable[[], int]
 
@@ -58,7 +58,7 @@ class IdentityControlPlane:
         codec: CapabilityCodec,
         audit: AuditLog,
         *,
-        state: AuthorizationState | None = None,
+        state: AuthorizationStore | None = None,
         clock: Clock = _system_clock,
     ) -> None:
         """Bind signing, audit, state, and clock dependencies."""
@@ -93,6 +93,7 @@ class IdentityControlPlane:
             context_constraints=request.context_constraints,
         )
         token = self._codec.encode(grant)
+        self._state.register_capability(grant.capability_id, grant.max_uses)
         self._audit.append(
             actor=request.issuer.id,
             action="identity:issue",
@@ -283,6 +284,7 @@ class IdentityControlPlane:
                         approval_required=grant.requires_approval or require_human_approval,
                         approval_id=request.approval_id,
                         intent_fingerprint=intent_fingerprint(request),
+                        expires_at=grant.expires_at,
                     )
                 )
                 reason = consumed.reason

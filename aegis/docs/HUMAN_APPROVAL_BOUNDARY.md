@@ -22,7 +22,7 @@ This is a reference credential mapping, not proof of physical human presence. Pr
 needs an identity provider, interactive human review, credential custody, revocation,
 scoped operator roles, independent audit retention and executor-side enforcement.
 The in-process library trusts its caller to supply authenticated principals; it is not
-an authentication service. The HMAC issuer and in-memory state are not production identity.
+an authentication service. The HMAC issuer is not production identity; the HTTP API now requires a durable authorization ledger.
 
 The body limits, missing/non-finite measurement rejection and simulation controls from
 the main-branch security PR are also included on this feature branch. Assertions about
@@ -41,5 +41,6 @@ the repository-root HUMAN_AUTHORITY.md. This branch is not deployed.
 automation and mandatory-approval switches. Settings and change history persist in
 SQLite. Named control operators use separate credentials and assigned permissions.
 New tenants start paused with approval required. Turning the global approval switch
-off does not remove a signed capability's approval requirement. The underlying
-capability ledger remains in-memory; this feature does not resolve that durability gap.
+off does not remove a signed capability's approval requirement. The HTTP API now uses a separate [durable authorization ledger](DURABLE_AUTHORIZATION.md)
+for capability state. The library memory store and in-memory governance audit remain
+reference components; persistence alone does not provide human identity or independent audit.

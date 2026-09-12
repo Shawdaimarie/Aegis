@@ -69,9 +69,9 @@ human / service / agent identity
    resource, audience, tenant, and context cannot authorize another operation.
 4. **State transitions are auditable.** Capability and authorization events are
    recorded without storing the capability token or signing key.
-5. **Reference boundaries are explicit.** The HMAC issuer and in-memory state are
-   intentionally documented as development components, not production identity
-   infrastructure.
+5. **Reference boundaries are explicit.** The HTTP API requires a durable single-host
+   authorization ledger. The HMAC issuer and memory-based library examples remain
+   reference components, not production identity infrastructure.
 
 ## Quick start
 
@@ -84,6 +84,11 @@ export AEGIS_CAPABILITY_SIGNING_KEY="$(python -c 'import secrets; print(secrets.
 
 make check
 make identity-demo
+# First setup only; an existing ledger is never overwritten.
+mkdir -p -m 700 .local-state
+export AEGIS_AUTHORIZATION_DB_PATH="$PWD/.local-state/authorization.sqlite3"
+export AEGIS_CONTROL_DB_PATH="$PWD/.local-state/controls.sqlite3"
+uv run python -m aegis.adapters.authorization_store "$AEGIS_AUTHORIZATION_DB_PATH"
 make serve
 ```
 
@@ -124,7 +129,7 @@ crosswalk, but it does not claim certification or universal compliance.
 
 Aegis is a reference implementation. A consequential deployment still needs
 federated workload identity, asymmetric signatures, managed or hardware-backed
-keys, durable and strongly consistent revocation/replay state, external audit
+keys, reviewed operation and recovery of the durable authorization ledger, external audit
 anchoring, policy administration, incident response, privacy review, and
 independent security assessment.
 
