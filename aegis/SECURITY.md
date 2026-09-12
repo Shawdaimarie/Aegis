@@ -1,21 +1,45 @@
-# Security policy
+# Security boundaries
+
+This is a reference governance and synthetic-training service. Standards are design
+goals, not certifications. No production deployment, signed-release pipeline, lockfile,
+secret-scanning service, or external audit retention is established by this repository.
+
+## Verified controls
+
+- Bearer authentication uses constant-time comparison. The shared token identifies
+  `api-client`; a caller-supplied header cannot impersonate a named human.
+- Boundary configuration loads from operator-controlled files, not request payloads.
+  Unknown keys are rejected. A missing numeric measurement for a blocking or halt
+  boundary denies the evaluation; non-finite telemetry and thresholds are rejected.
+- The API reads at most 256 KiB of body data, including requests without a truthful
+  Content-Length. The server's simulation cap is 1,000 steps and cadence is fixed at one.
+- Rate buckets expire and have a fixed population ceiling. Client-facing validation
+  errors omit input values. Authentication configuration failures return a safe 503.
+- An in-memory hash chain records evaluations and service identity. Hash verification
+  detects internal alteration but does not authenticate a human or resist full rechaining.
+- The security CI job runs lint, strict types, regression tests with a coverage floor,
+  and a dependency vulnerability audit. GitHub Actions are pinned to exact revisions.
+
+## Human authority and deployment requirements
+
+See ../../HUMAN_AUTHORITY.md and the repository-root .github/CODEOWNERS. Proposed
+rules require human approval; they are not active until GitHub settings are configured.
+The current GitHub plan rejected private-repository ruleset access during this audit.
+
+The evaluate endpoint judges supplied snapshots; a caller can lie about measurements
+or dataset hashes. It is not proof of real execution, authentic source data, compliance,
+or human approval. The simulation endpoint performs synthetic arithmetic, not trading,
+external tool use, or network policy enforcement. Egress tags are declarations only.
+
+Before deployment, authenticate individual users, enforce scopes and approvals at the
+executor, collect trusted telemetry, bound audit retention and aggregate workload,
+protect against slow requests at ingress, persist audit evidence independently, secure
+the operator's configuration and secrets, and pin/audit deployment dependencies/images.
+Rate limits are per process and trust the directly connected client address; a proxy
+needs its own authenticated rate-limiting design. The in-memory audit log grows for
+the process lifetime and is lost on restart. Do not claim production readiness.
 
 ## Reporting
-Email the security owner listed in CODEOWNERS with a description, reproduction steps, and impact. Do not open a public issue. Acknowledgement within 2 business days; resolution plan within 10.
 
-## Baseline
-- API surface: OWASP ASVS 4.0 Level 2. Authentication and `governance/`: Level 3.
-- Delivery pipeline: NIST SP 800-218 (SSDF). Release artefacts are Sigstore-signed with a CycloneDX SBOM.
-
-## Controls in this codebase
-| Threat (STRIDE) | Control | Where |
-|---|---|---|
-| Spoofing | Bearer token, constant-time comparison | `api/v1/security.py` |
-| Tampering | Hash-chained audit log, verified on every read | `governance/audit.py` |
-| Repudiation | Every evaluation and API mutation is audited with actor | `governance/engine.py`, `api/v1/app.py` |
-| Information disclosure | Log redaction processor; CSP `default-src 'self'`; no secrets in URLs | `adapters/logging.py`, middleware |
-| Denial of service | 256 KiB body limit, per-client rate limit, step ceiling | middleware, `RunSpec` |
-| Elevation of privilege | Boundaries read-only after load; engine has no mutation API; non-root container | `governance/engine.py`, `Dockerfile` |
-
-## Supply chain
-Dependencies pinned via lockfile; `pip-audit` and `gitleaks` in CI; base images pinned by digest in production.
+Contact the repository owner through a private channel or GitHub private advisory if
+enabled. Do not post credentials or exploit details to public issues.
