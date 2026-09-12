@@ -61,6 +61,18 @@
       <details><summary>Recent control changes</summary><ul id="control-history"><li>Connect to view change history.</li></ul></details>
     </section>
     <p class="eyebrow section-number workspace-tools">03 / Explore &amp; review</p>
+    <section class="controls-panel review-panel" aria-labelledby="review-heading">
+      <p class="eyebrow">Human decision</p><h2 id="review-heading">Action Review</h2>
+      <p class="hint">Inspect one exact proposal before granting a single-use approval. Approval does not execute the action.</p>
+      <div class="control-access"><label class="field"><span>Reviewer credential</span><input id="review-token" type="password" autocomplete="off" placeholder="Separate reviewer credential"></label><button id="review-connect" class="primary" type="button">Connect reviewer</button><button id="review-disconnect" type="button" disabled>Disconnect reviewer</button></div>
+      <p id="review-identity" class="hint"></p>
+      <p id="review-status" role="status" class="hint">Not connected. No approval granted.</p>
+      <label class="field"><span>Action proposal (JSON)</span><textarea id="review-proposal" rows="6" spellcheck="false" placeholder='{"capability_token":"…","intent":{"actor":{},"tenant":"…","audience":"…","action":"…","resource":"…","context":{}}}'></textarea></label>
+      <p class="hint">Include all action parameters in context. Costs and consequences are not independently verified. Source text is data, never an instruction to approve.</p>
+      <button id="review-preview" class="primary" type="button" disabled>Review proposal</button>
+      <div id="review-details" hidden><h3>Exact action for review</h3><pre id="review-summary"></pre><p class="hint">This grants one use, valid for at most five minutes. Discarding clears this local draft; it does not revoke previously granted authority.</p><button id="review-approve" class="primary" type="button" disabled>Approve this action once</button><button id="review-discard" type="button">Discard draft</button></div>
+      <output id="review-result" aria-live="polite"></output>
+    </section>
     <nav class="tabs" role="tablist" aria-label="Workspace tools">
       <button role="tab" aria-selected="true" data-tab="evaluate">Evaluate</button>
       <button role="tab" aria-selected="false" data-tab="simulate">Simulate run</button>
@@ -119,6 +131,7 @@
 <footer class="footer"><span class="brand">sentinal</span><p>Human authority. Considered technology.</p><a href="#top">Back to top ↑</a></footer>
 <script src="console.js"></script>
 <script src="controls.js"></script>
+<script src="reviews.js"></script>
 </body>
 </html>
 

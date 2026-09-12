@@ -174,8 +174,8 @@ class IdentityControlPlane:
         )
         return IssuedCapability(token=token, grant=child)
 
-    def approve(self, request: ApprovalRequest) -> ApprovalGrant:
-        """Create a human approval bound to one exact authorization intent."""
+    def review_approval(self, request: ApprovalRequest) -> dict[str, object]:
+        """Validate a proposed approval without creating or consuming authority."""
         grant = self._codec.decode(request.capability_token)
         now = self._clock()
         if self._state.is_revoked(grant.capability_id):
@@ -187,6 +187,19 @@ class IdentityControlPlane:
             raise ValueError("approver must belong to the capability tenant")
         if request.max_uses > grant.max_uses:
             raise ValueError("approval use budget exceeds capability use budget")
+        return {
+            "capability_id": grant.capability_id,
+            "intent": request.intent.model_dump(mode="json"),
+            "intent_fingerprint": intent_fingerprint(request.intent),
+            "expires_at": min(now + request.ttl_seconds, grant.expires_at),
+            "max_uses": request.max_uses,
+        }
+
+    def approve(self, request: ApprovalRequest) -> ApprovalGrant:
+        """Create a human approval bound to one exact authorization intent."""
+        self.review_approval(request)
+        grant = self._codec.decode(request.capability_token)
+        now = self._clock()
         approval = ApprovalGrant(
             approval_id=self._id("approval"),
             capability_id=grant.capability_id,

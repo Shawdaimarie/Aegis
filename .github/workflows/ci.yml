@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: "22"
       - name: Verify independent console controls
-        run: node --test tests/web/controls.test.cjs
+        run: node --test tests/web/*.test.cjs
       - name: Install uv
         run: python -m pip install --upgrade pip uv
       - name: Resolve development environment
