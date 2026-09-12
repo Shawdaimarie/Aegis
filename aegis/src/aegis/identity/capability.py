@@ -30,9 +30,12 @@ def _b64url_decode(value: str) -> bytes:
     """Decode an envelope segment and reject malformed base64."""
     padding = "=" * (-len(value) % 4)
     try:
-        return base64.b64decode(value + padding, altchars=b"-_", validate=True)
+        decoded = base64.b64decode(value + padding, altchars=b"-_", validate=True)
     except (binascii.Error, ValueError) as exc:
         raise IntegrityError("capability token contains invalid base64url data") from exc
+    if _b64url_encode(decoded) != value:
+        raise IntegrityError("capability token contains noncanonical base64url data")
+    return decoded
 
 
 def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -133,6 +136,8 @@ class CapabilityCodec:
 
     def decode(self, token: str) -> CapabilityGrant:
         """Validate the signature and return a strict capability grant."""
+        if not token.isascii():
+            raise IntegrityError("capability token must be ASCII")
         parts = token.split(".")
         if len(parts) != ENVELOPE_PARTS or parts[0] != ENVELOPE_PREFIX:
             raise IntegrityError("capability token has an unsupported format")

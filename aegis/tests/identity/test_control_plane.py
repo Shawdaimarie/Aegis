@@ -358,3 +358,22 @@ def test_delegation_rejects_privilege_escalation(plane, principals, factory: Cal
     parent = issue_default(plane, principals, max_uses=2, requires_approval=True)
     with pytest.raises(ValueError, match=r"delegat|approval|tenant|subject|authority"):
         delegate_default(plane, principals, parent.token, **factory(principals))
+
+
+def test_every_modified_signature_suffix_is_rejected(plane, principals):
+    issued = issue_default(plane, principals)
+    codec = CapabilityCodec("k" * 32)
+    for suffix in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_":
+        if suffix == issued.token[-1]:
+            continue
+        with pytest.raises(IntegrityError):
+            codec.decode(issued.token[:-1] + suffix)
+    assert codec.decode(issued.token) == issued.grant
+
+
+def test_noncanonical_or_nonascii_token_is_an_integrity_error(plane, principals):
+    issued = issue_default(plane, principals)
+    prefix, key, payload, signature = issued.token.split(".")
+    for token in (issued.token + "=", f"{prefix}.{key}.é{payload}.{signature}"):
+        with pytest.raises(IntegrityError):
+            CapabilityCodec("k" * 32).decode(token)
