@@ -238,3 +238,13 @@ def test_corrupt_or_relative_storage_fails_closed(setup, monkeypatch):
     assert client.get("/v1/controls", headers=ADMIN).status_code == 503
     monkeypatch.setenv("AEGIS_CONTROL_DB_PATH", "relative.sqlite3")
     assert client.get("/v1/controls", headers=ADMIN).status_code == 503
+
+
+def test_control_pages_cannot_be_framed_or_cached(setup):
+    client, _, _ = setup
+    for path in ("/console/", "/v1/controls", "/v1/controls/history"):
+        response = client.get(path, headers=ADMIN)
+        assert response.status_code == 200
+        assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+        assert "base-uri 'none'" in response.headers["content-security-policy"]
+        assert response.headers["cache-control"] == "no-store"

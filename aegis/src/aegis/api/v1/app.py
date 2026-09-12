@@ -114,6 +114,11 @@ def _install_guard(app: FastAPI) -> None:
         response = await call_next(request)
         response.headers["X-Request-ID"] = rid
         response.headers["Content-Security-Policy"] = "default-src 'self'"
+        if request.url.path.startswith(("/v1/controls", "/console")):
+            response.headers["Content-Security-Policy"] += (
+                "; frame-ancestors 'none'; base-uri 'none'"
+            )
+            response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         return response
