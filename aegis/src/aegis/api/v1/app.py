@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from aegis import __version__
 from aegis.adapters.secrets import get_secret
+from aegis.api.v1.controls import control_store, install_control_routes
 from aegis.api.v1.security import Principal as ApiPrincipal
 from aegis.api.v1.security import new_request_id, require_approver, require_principal
 from aegis.core.errors import ConfigurationError, GovernanceViolationError, IntegrityError
@@ -210,6 +211,7 @@ def create_app(
         }
 
     _install_identity_routes(app, identity, audit)
+    install_control_routes(app)
 
     @app.get("/v1/audit")
     async def audit_tail(_: Auth, limit: int = 50) -> dict[str, object]:
@@ -317,7 +319,12 @@ def _install_identity_routes(app: FastAPI, identity: IdentityControlPlane, audit
     @app.post("/v1/authorization/check")
     async def authorize(body: AuthorizationRequest, principal: Auth) -> dict[str, object]:
         """Evaluate and consume a capability when the request is allowed."""
-        decision = identity.authorize(body)
+        with control_store() as store, store.decision_settings(body.tenant) as controls:
+            decision = identity.authorize(
+                body,
+                automation_enabled=controls.automation_enabled,
+                require_human_approval=controls.require_human_approval,
+            )
         audit.append(
             principal.subject,
             "api:authorization:check",

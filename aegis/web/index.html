@@ -26,6 +26,30 @@
   </aside>
 
   <section class="work">
+    <section class="controls-panel" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Human controls</h2>
+      <p class="hint">Two independent settings for your assigned tenant. Authentication and existing policy restrictions always remain active.</p>
+      <div class="control-access">
+        <label class="field"><span>Personal control credential</span>
+          <input id="control-token" type="password" autocomplete="off" spellcheck="false" placeholder="Kept in memory only"></label>
+        <button id="control-connect" class="primary" type="button">Connect controls</button>
+        <button id="control-disconnect" type="button" disabled>Disconnect</button>
+      </div>
+      <p id="control-status" class="status" role="status">Connect to view verified settings.</p>
+      <div class="toggle-row">
+        <div><strong id="automation-label">Automation</strong>
+          <p id="automation-help" class="hint">Off blocks new action authorizations. It does not cancel actions already in progress.</p></div>
+        <button id="automation-switch" class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="automation-label" aria-describedby="automation-help" disabled>Unknown</button>
+      </div>
+      <div class="toggle-row">
+        <div><strong id="approval-label">Require human approval for every action</strong>
+          <p id="approval-help" class="hint">Off allows policy-permitted actions. Approval already required by a capability still applies.</p></div>
+        <button id="approval-switch" class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="approval-label" aria-describedby="approval-help" disabled>Unknown</button>
+      </div>
+      <label class="field"><span>Reason for change</span>
+        <input id="control-reason" minlength="3" maxlength="256" placeholder="Required before changing either setting"></label>
+      <details><summary>Recent control changes</summary><ul id="control-history"><li>Connect to view change history.</li></ul></details>
+    </section>
     <nav class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-tab="evaluate">Evaluate</button>
       <button role="tab" aria-selected="false" data-tab="simulate">Simulate run</button>
@@ -82,5 +106,7 @@
   </section>
 </main>
 <script src="console.js"></script>
+<script src="controls.js"></script>
 </body>
 </html>
+

@@ -3,18 +3,36 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from aegis.adapters.control_settings import ControlChange, ControlSettingsStore
 from aegis.api.v1.app import create_app
 
 AUTH = {"Authorization": "Bearer test-token", "X-Aegis-Subject": "control-plane-admin"}
 
 
 @pytest.fixture
-def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(monkeypatch: pytest.MonkeyPatch, tmp_path) -> TestClient:
     monkeypatch.setenv("AEGIS_API_TOKEN", "test-token")
     monkeypatch.setenv("AEGIS_CAPABILITY_SIGNING_KEY", "k" * 32)
     monkeypatch.setenv("AEGIS_APPROVER_TOKEN", "separate-human-test-key")
     monkeypatch.setenv("AEGIS_APPROVER_SUBJECT", "human:reviewer")
     monkeypatch.setenv("AEGIS_APPROVER_TENANT", "acme")
+    path = tmp_path / "controls.sqlite3"
+    monkeypatch.setenv("AEGIS_CONTROL_DB_PATH", str(path))
+    store = ControlSettingsStore(path)
+    for revision, (setting, enabled) in enumerate(
+        [("automation_enabled", True), ("require_human_approval", False)]
+    ):
+        store.change(
+            "acme",
+            ControlChange(
+                setting=setting,
+                enabled=enabled,
+                expected_revision=revision,
+                reason="Legacy test policy",
+            ),
+            actor="human:test-admin",
+            role="admin",
+        )
     return TestClient(create_app())
 
 

@@ -29,6 +29,7 @@ class DecisionReason(StrEnum):
     """Stable reason codes emitted by every authorization decision."""
 
     ALLOW = "allow"
+    AUTOMATION_PAUSED = "automation_paused"
     INVALID_TOKEN = "invalid_token"  # noqa: S105 - public decision code, not a credential
     NOT_YET_VALID = "not_yet_valid"
     EXPIRED = "expired"

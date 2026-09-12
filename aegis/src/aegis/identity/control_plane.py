@@ -252,13 +252,21 @@ class IdentityControlPlane:
         )
         return DecisionReason.ALLOW if context_matches else DecisionReason.CONTEXT_MISMATCH
 
-    def authorize(self, request: AuthorizationRequest) -> AuthorizationDecision:
+    def authorize(
+        self,
+        request: AuthorizationRequest,
+        *,
+        automation_enabled: bool = True,
+        require_human_approval: bool = False,
+    ) -> AuthorizationDecision:
         """Return an audited, deny-by-default authorization decision."""
         now = self._clock()
         grant: CapabilityGrant | None = None
         try:
             grant = self._codec.decode(request.token)
             reason = self._static_reason(grant, request, now)
+            if reason is DecisionReason.ALLOW and not automation_enabled:
+                reason = DecisionReason.AUTOMATION_PAUSED
         except IntegrityError:
             reason = DecisionReason.INVALID_TOKEN
 
@@ -272,7 +280,7 @@ class IdentityControlPlane:
                         max_uses=grant.max_uses,
                         request_id=request.request_id,
                         now=now,
-                        approval_required=grant.requires_approval,
+                        approval_required=grant.requires_approval or require_human_approval,
                         approval_id=request.approval_id,
                         intent_fingerprint=intent_fingerprint(request),
                     )

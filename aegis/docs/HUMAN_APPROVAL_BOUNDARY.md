@@ -34,3 +34,12 @@ unavailable. Review the retained report; a completed scan is not a human approva
 
 Repository review controls remain proposed until GitHub settings are activated. See
 the repository-root HUMAN_AUTHORITY.md. This branch is not deployed.
+
+## Operator switches
+
+[Independent human controls](OPERATOR_CONTROLS.md) adds server-enforced, tenant-scoped
+automation and mandatory-approval switches. Settings and change history persist in
+SQLite. Named control operators use separate credentials and assigned permissions.
+New tenants start paused with approval required. Turning the global approval switch
+off does not remove a signed capability's approval requirement. The underlying
+capability ledger remains in-memory; this feature does not resolve that durability gap.
