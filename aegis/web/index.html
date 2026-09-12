@@ -7,27 +7,37 @@
 <link rel="stylesheet" href="console.css">
 </head>
 <body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
 <header class="bar">
-  <div class="brand"><span class="mark" aria-hidden="true"></span>Sentinal</div>
-  <div class="bar-right">
-    <label class="field inline">
-      <span>API token</span>
-      <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token, kept in memory only">
-    </label>
-    <span id="conn" class="status" aria-live="polite">Not connected</span>
-  </div>
+  <a class="brand" href="#top" aria-label="Sentinal home"><span class="mark" aria-hidden="true"></span>sentinal</a>
+  <nav class="header-nav" aria-label="Main navigation"><a href="#controls-heading">Governance</a><a href="#workspace">Workspace <span aria-hidden="true">↗</span></a></nav>
 </header>
+<section id="top" class="hero" aria-labelledby="hero-heading">
+  <div class="hero-copy">
+    <p class="eyebrow">Technology, with human direction</p>
+    <h1 id="hero-heading">Intelligence.<br>Grounded in<br><span>human choice.</span></h1>
+    <p class="hero-description">A considered space to govern automation, set boundaries and keep people at the center of every decision.</p>
+    <a class="hero-cta" href="#controls-heading">Enter governance <span aria-hidden="true">↗</span></a>
+    <div class="hero-note"><span class="note-line" aria-hidden="true"></span>Built for thoughtful action.</div>
+  </div>
+  <figure class="hero-art"><img src="foundation.svg" width="760" height="860" alt="Sculptural sage and ivory arches on a warm stone foundation, opening toward a soft horizon."><figcaption><span>01 / The foundation</span><span>Human agency, by design</span></figcaption></figure>
+</section>
+<div class="workspace-heading" id="workspace"><p class="eyebrow">Your control environment</p><p>Set the direction.<br><span>Keep the authority.</span></p><span class="workspace-index" aria-hidden="true">01 — 03</span></div>
 
 <main class="grid">
   <aside class="rail" aria-labelledby="rail-h">
-    <h2 id="rail-h" class="eyebrow">Boundaries</h2>
+    <p class="eyebrow section-number">01 / Configuration</p>
+    <h2 id="rail-h">Boundaries</h2>
+    <label class="field api-access"><span>API token</span><input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Kept in memory only"></label>
+    <span id="conn" class="status" aria-live="polite">Not connected</span>
     <p class="hint">Loaded read-only from configuration. Nothing here can be edited at runtime.</p>
     <ul id="boundaries" class="blist"><li class="empty">Connect to load the boundary set.</li></ul>
   </aside>
 
   <section class="work">
     <section class="controls-panel" aria-labelledby="controls-heading">
-      <h2 id="controls-heading">Admin Governance</h2>
+      <p class="eyebrow section-number">02 / Human authority</p>
+      <h2 id="controls-heading" tabindex="-1">Admin Governance</h2>
       <p class="hint">Human authority. Accountable action. Manage automation and approval within your assigned tenant.</p>
       <div class="control-access">
         <label class="field"><span>Governance access credential</span>
@@ -50,7 +60,8 @@
         <input id="control-reason" minlength="3" maxlength="256" placeholder="Required before changing either setting"></label>
       <details><summary>Recent control changes</summary><ul id="control-history"><li>Connect to view change history.</li></ul></details>
     </section>
-    <nav class="tabs" role="tablist">
+    <p class="eyebrow section-number workspace-tools">03 / Explore &amp; review</p>
+    <nav class="tabs" role="tablist" aria-label="Workspace tools">
       <button role="tab" aria-selected="true" data-tab="evaluate">Evaluate</button>
       <button role="tab" aria-selected="false" data-tab="simulate">Simulate run</button>
       <button role="tab" aria-selected="false" data-tab="audit">Audit chain</button>
@@ -98,13 +109,14 @@
         <span id="audit-meta" class="status"></span>
       </div>
       <div id="chain" class="chain" aria-live="polite"></div>
-      <table id="audit-table" class="ledger">
+      <div class="ledger-scroll" role="region" aria-label="Audit records" tabindex="0"><table id="audit-table" class="ledger">
         <thead><tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Decision</th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
     </div>
   </section>
 </main>
+<footer class="footer"><span class="brand">sentinal</span><p>Human authority. Considered technology.</p><a href="#top">Back to top ↑</a></footer>
 <script src="console.js"></script>
 <script src="controls.js"></script>
 </body>
