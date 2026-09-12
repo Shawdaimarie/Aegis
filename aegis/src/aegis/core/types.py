@@ -32,7 +32,7 @@ class ScenarioKind(StrEnum):
 class RunContext(BaseModel):
     """Immutable snapshot of a run against which boundaries are evaluated."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
 
     run_id: str
     scenario: ScenarioKind

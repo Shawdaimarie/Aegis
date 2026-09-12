@@ -4,9 +4,10 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,13 +24,21 @@ from aegis.training.runner import Runner, RunSpec
 MAX_BODY_BYTES = 256 * 1024
 RATE_LIMIT_PER_MINUTE = 120
 RATE_WINDOW_SECONDS = 60
+MAX_RATE_BUCKETS = 4096
 Auth = Annotated[Principal, Depends(require_principal)]
+
+
+class SimulationSpec(RunSpec):
+    """Server-owned limits; callers cannot suppress per-step governance."""
+
+    steps: int = Field(ge=1, le=1000)
+    governance_cadence: Literal[1] = 1
 
 
 class EvaluateRequest(BaseModel):
     """Body for POST /v1/governance/evaluate."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     checkpoint: Checkpoint
     context: RunContext
@@ -38,9 +47,9 @@ class EvaluateRequest(BaseModel):
 class SimulateRequest(BaseModel):
     """Body for POST /v1/runs/simulate: a synthetic run for validating governance end-to-end."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
-    spec: RunSpec
+    spec: SimulationSpec
     loss_start: float = Field(gt=0, default=2.0)
     loss_decay: float = Field(gt=0, le=1, default=0.97)
     gpu_hours_per_step: float = Field(ge=0, default=0.01)
@@ -56,11 +65,32 @@ def _install_guard(app: FastAPI) -> None:
     ) -> Response:
         """Reject oversized bodies, rate-limit per client, and stamp security headers."""
         rid = new_request_id()
-        length = int(request.headers.get("content-length") or 0)
+        try:
+            length = int(request.headers.get("content-length") or 0)
+            if length < 0:
+                raise ValueError
+        except ValueError:
+            return JSONResponse(
+                {"error": "invalid content length", "request_id": rid}, status_code=400
+            )
         if length > MAX_BODY_BYTES:
             return JSONResponse({"error": "body too large", "request_id": rid}, status_code=413)
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > MAX_BODY_BYTES:
+                return JSONResponse({"error": "body too large", "request_id": rid}, status_code=413)
+            body.extend(chunk)
+        # Starlette's middleware replays the cached body to the downstream parser.
+        request._body = bytes(body)
         client = request.client.host if request.client else "unknown"
         now = time.monotonic()
+        for key in list(buckets):
+            if not buckets[key] or now - buckets[key][-1] > RATE_WINDOW_SECONDS:
+                del buckets[key]
+        if client not in buckets and len(buckets) >= MAX_RATE_BUCKETS:
+            return JSONResponse(
+                {"error": "rate capacity reached", "request_id": rid}, status_code=429
+            )
         q = buckets[client]
         while q and now - q[0] > RATE_WINDOW_SECONDS:
             q.popleft()
@@ -92,6 +122,18 @@ def create_app(governance_path: Path | None = None) -> FastAPI:
     )
 
     _install_guard(app)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_: Request, exc: RequestValidationError) -> JSONResponse:
+        """Return validation errors without reflecting secrets or non-finite inputs."""
+        return JSONResponse(
+            {
+                "detail": [
+                    {"loc": e["loc"], "msg": e["msg"], "type": e["type"]} for e in exc.errors()
+                ]
+            },
+            status_code=422,
+        )
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, str]:

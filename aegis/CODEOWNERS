@@ -1,4 +1,2 @@
-* @platform-owner
-/src/aegis/governance/ @platform-owner @security-owner
-/src/aegis/api/ @platform-owner @security-owner
-/src/aegis/adapters/secrets.py @security-owner
+# GitHub uses the repository-root .github/CODEOWNERS, which covers every path.
+* @Shawdaimarie

@@ -35,7 +35,11 @@ def test_default_config_blocks_undeclared_dataset(engine):
 
 def test_advisory_does_not_block(engine):
     ctx = RunContext(
-        run_id="r", scenario=ScenarioKind.INDEPENDENT, step=1, resources={"memory_fraction": 0.9}
+        run_id="r",
+        scenario=ScenarioKind.INDEPENDENT,
+        step=1,
+        metrics={"loss": 1.0},
+        resources={"memory_fraction": 0.9, "gpu_hours": 1.0},
     )
     d = engine.evaluate(Checkpoint.STEP, ctx)
     assert d.allowed
