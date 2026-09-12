@@ -1,6 +1,2 @@
+# All sources and controls require owner review. Activation is documented in HUMAN_AUTHORITY.md.
 * @Shawdaimarie
-
-/aegis/src/aegis/identity/ @Shawdaimarie
-/aegis/src/aegis/governance/ @Shawdaimarie
-/aegis/src/aegis/api/ @Shawdaimarie
-/.github/workflows/ @Shawdaimarie

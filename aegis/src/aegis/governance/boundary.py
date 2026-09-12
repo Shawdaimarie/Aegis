@@ -1,5 +1,6 @@
 """Boundary definitions: a predicate over RunContext plus metadata and severity."""
 
+import math
 from enum import StrEnum
 from typing import Any
 
@@ -38,6 +39,8 @@ class Predicate(BaseModel):
             if self.value is None:
                 raise ValueError(f"operator {self.op} requires a numeric value")
             object.__setattr__(self, "value", float(self.value))
+            if not math.isfinite(float(self.value)):
+                raise ValueError("numeric policy thresholds must be finite")
         return self
 
     def holds(self, ctx: RunContext) -> bool:
@@ -77,4 +80,15 @@ class Boundary(BaseModel):
 
     def crossed(self, ctx: RunContext) -> bool:
         """Return True if this boundary is crossed in ``ctx``."""
+        if self.severity is not Severity.ADVISORY and self.predicate.op in {
+            Comparator.GT,
+            Comparator.GE,
+            Comparator.LT,
+            Comparator.LE,
+        }:
+            actual = ctx.get(self.predicate.path)
+            if isinstance(actual, bool) or not isinstance(actual, (int, float)):
+                return True
+            if not math.isfinite(actual):
+                return True
         return self.predicate.holds(ctx)

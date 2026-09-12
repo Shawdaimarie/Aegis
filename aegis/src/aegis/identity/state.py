@@ -111,20 +111,9 @@ class AuthorizationState:
             if remaining == 0:
                 return ConsumeResult(False, DecisionReason.USE_BUDGET_EXHAUSTED, 0)
 
-            approval: ApprovalGrant | None = None
-            if request.approval_required:
-                if request.approval_id is None:
-                    return ConsumeResult(False, DecisionReason.APPROVAL_REQUIRED, remaining)
-                approval = self._approvals.get(request.approval_id)
-                approval_uses = self._approval_uses.get(request.approval_id, 0)
-                if (
-                    approval is None
-                    or approval.capability_id != request.capability_id
-                    or approval.intent_fingerprint != request.intent_fingerprint
-                    or approval.expires_at <= request.now
-                    or approval_uses >= approval.max_uses
-                ):
-                    return ConsumeResult(False, DecisionReason.APPROVAL_INVALID, remaining)
+            reason, approval = self._approval_for(request)
+            if reason is not DecisionReason.ALLOW:
+                return ConsumeResult(False, reason, remaining)
 
             if len(self._request_ids) >= self._max_request_ids:
                 return ConsumeResult(False, DecisionReason.STATE_UNAVAILABLE, remaining)
@@ -134,3 +123,21 @@ class AuthorizationState:
                 approval_uses = self._approval_uses.get(request.approval_id, 0)
                 self._approval_uses[request.approval_id] = approval_uses + 1
             return ConsumeResult(True, DecisionReason.ALLOW, remaining - 1)
+
+    def _approval_for(self, request: ConsumeRequest) -> tuple[DecisionReason, ApprovalGrant | None]:
+        """Validate approval while the caller holds the state lock."""
+        if not request.approval_required:
+            return DecisionReason.ALLOW, None
+        if request.approval_id is None:
+            return DecisionReason.APPROVAL_REQUIRED, None
+        approval = self._approvals.get(request.approval_id)
+        approval_uses = self._approval_uses.get(request.approval_id, 0)
+        if (
+            approval is None
+            or approval.capability_id != request.capability_id
+            or approval.intent_fingerprint != request.intent_fingerprint
+            or approval.expires_at <= request.now
+            or approval_uses >= approval.max_uses
+        ):
+            return DecisionReason.APPROVAL_INVALID, None
+        return DecisionReason.ALLOW, approval

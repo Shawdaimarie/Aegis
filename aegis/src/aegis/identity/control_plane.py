@@ -33,6 +33,7 @@ Clock = Callable[[], int]
 
 
 def _system_clock() -> int:
+    """Return the current Unix time used by capability validity checks."""
     return int(time.time())
 
 
@@ -67,6 +68,7 @@ class IdentityControlPlane:
         self._clock = clock
 
     def _id(self, prefix: str) -> str:
+        """Create a fresh identifier in the requested record namespace."""
         return f"{prefix}-{secrets.token_urlsafe(12)}"
 
     def issue(self, request: IssueCapabilityRequest) -> IssuedCapability:
@@ -225,6 +227,7 @@ class IdentityControlPlane:
         intent: AuthorizationIntent,
         now: int,
     ) -> DecisionReason:
+        """Evaluate signed scope and time constraints before consuming state."""
         checks = (
             (now < grant.not_before, DecisionReason.NOT_YET_VALID),
             (now >= grant.expires_at, DecisionReason.EXPIRED),

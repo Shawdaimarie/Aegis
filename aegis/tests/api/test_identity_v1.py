@@ -12,6 +12,9 @@ AUTH = {"Authorization": "Bearer test-token", "X-Aegis-Subject": "control-plane-
 def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("AEGIS_API_TOKEN", "test-token")
     monkeypatch.setenv("AEGIS_CAPABILITY_SIGNING_KEY", "k" * 32)
+    monkeypatch.setenv("AEGIS_APPROVER_TOKEN", "separate-human-test-key")
+    monkeypatch.setenv("AEGIS_APPROVER_SUBJECT", "human:reviewer")
+    monkeypatch.setenv("AEGIS_APPROVER_TENANT", "acme")
     return TestClient(create_app())
 
 
@@ -21,7 +24,7 @@ def principal(identifier: str, kind: str = "agent", tenant: str = "acme") -> dic
 
 def issue_body(*, approval: bool = False, max_uses: int = 2) -> dict[str, object]:
     return {
-        "issuer": principal("human:admin", "human"),
+        "issuer": principal("api-client", "service"),
         "subject": principal("agent:planner"),
         "audience": "service:payments",
         "actions": ["payment.read", "payment.submit"],
@@ -110,7 +113,7 @@ def test_approval_and_revocation_paths(client: TestClient) -> None:
             "ttl_seconds": 300,
             "max_uses": 1,
         },
-        headers=AUTH,
+        headers={"Authorization": "Bearer separate-human-test-key"},
     )
     assert approval_response.status_code == 201
     approval_id = approval_response.json()["approval_id"]
@@ -130,7 +133,7 @@ def test_approval_and_revocation_paths(client: TestClient) -> None:
         "/v1/identity/revocations",
         json={
             "capability_id": issued["grant"]["capability_id"],
-            "revoked_by": principal("human:admin", "human"),
+            "revoked_by": principal("api-client", "service"),
             "reason": "incident response containment",
         },
         headers=AUTH,

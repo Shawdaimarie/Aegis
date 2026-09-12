@@ -149,7 +149,8 @@ def test_authorizes_in_scope_then_enforces_replay_and_use_budget(plane, principa
 
     second = plane.authorize(auth_request(issued.token, principals, request_id="request-002"))
     exhausted = plane.authorize(auth_request(issued.token, principals, request_id="request-003"))
-    assert second.allowed is True and second.remaining_uses == 0
+    assert second.allowed is True
+    assert second.remaining_uses == 0
     assert exhausted.reason is DecisionReason.USE_BUDGET_EXHAUSTED
     audit.verify()
 
@@ -313,7 +314,8 @@ def test_delegation_is_narrower_and_reserves_parent_budget(plane, principals):
     parent_second = plane.authorize(
         auth_request(parent.token, principals, request_id="request-parent-exhausted")
     )
-    assert parent_first.allowed is True and parent_first.remaining_uses == 0
+    assert parent_first.allowed is True
+    assert parent_first.remaining_uses == 0
     assert parent_second.reason is DecisionReason.USE_BUDGET_EXHAUSTED
 
 
@@ -354,5 +356,5 @@ def test_parent_revocation_cascades_to_delegated_child(plane, principals):
 )
 def test_delegation_rejects_privilege_escalation(plane, principals, factory: Callable):
     parent = issue_default(plane, principals, max_uses=2, requires_approval=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"delegat|approval|tenant|subject|authority"):
         delegate_default(plane, principals, parent.token, **factory(principals))

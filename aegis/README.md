@@ -155,3 +155,7 @@ durable distributed revocation, or independent audit anchoring.
 ## License
 
 Apache-2.0. See [`LICENSE`](LICENSE).
+
+## Human review setup
+
+Live approvals are disabled until a separate operator-owned reviewer credential and identity are configured. See [the approval boundary](docs/HUMAN_APPROVAL_BOUNDARY.md). Do not send a service token or caller-supplied identity as proof of human approval.

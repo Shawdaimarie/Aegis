@@ -7,6 +7,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+MAX_CONTEXT_VALUE_LENGTH = 256
+
 Identifier = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:/-]{1,127}$")]
 TenantId = Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9._-]{1,63}$")]
 Audience = Annotated[str, Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._:/-]{1,127}$")]
@@ -27,7 +29,7 @@ class DecisionReason(StrEnum):
     """Stable reason codes emitted by every authorization decision."""
 
     ALLOW = "allow"
-    INVALID_TOKEN = "invalid_token"
+    INVALID_TOKEN = "invalid_token"  # noqa: S105 - public decision code, not a credential
     NOT_YET_VALID = "not_yet_valid"
     EXPIRED = "expired"
     REVOKED = "revoked"
@@ -80,6 +82,7 @@ class CapabilityGrant(BaseModel):
     @field_validator("actions", "resources")
     @classmethod
     def _normalize_unique_values(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        """Canonicalize nonempty scope values before signing."""
         normalized = tuple(sorted(set(values)))
         if not normalized:
             raise ValueError("at least one value is required")
@@ -88,6 +91,7 @@ class CapabilityGrant(BaseModel):
     @field_validator("resources")
     @classmethod
     def _validate_resource_patterns(cls, resources: tuple[str, ...]) -> tuple[str, ...]:
+        """Reject ambiguous wildcards outside the terminal subtree form."""
         for resource in resources:
             if "*" in resource and not resource.endswith("/**"):
                 raise ValueError("resource wildcards are allowed only as a terminal '/**'")
@@ -98,13 +102,15 @@ class CapabilityGrant(BaseModel):
     @field_validator("context_constraints")
     @classmethod
     def _validate_context_values(cls, values: dict[str, str]) -> dict[str, str]:
+        """Bound each context value and canonicalize key ordering."""
         for key, value in values.items():
-            if not value or len(value) > 256:
+            if not value or len(value) > MAX_CONTEXT_VALUE_LENGTH:
                 raise ValueError(f"context constraint {key!r} must contain 1-256 characters")
         return dict(sorted(values.items()))
 
     @model_validator(mode="after")
-    def _validate_scope(self) -> "CapabilityGrant":
+    def _validate_scope(self) -> CapabilityGrant:
+        """Require tenant, time and delegation metadata to be internally consistent."""
         if self.issuer.tenant != self.tenant or self.subject.tenant != self.tenant:
             raise ValueError("issuer, subject, and capability must share one tenant")
         if self.not_before < self.issued_at:
@@ -193,7 +199,8 @@ class ApprovalRequest(BaseModel):
     max_uses: int = Field(ge=1, le=100, default=1)
 
     @model_validator(mode="after")
-    def _human_approval_only(self) -> "ApprovalRequest":
+    def _human_approval_only(self) -> ApprovalRequest:
+        """Validate the declared identity shape; authentication belongs to the API boundary."""
         if self.approver.kind is not PrincipalKind.HUMAN:
             raise ValueError("approvals must be issued by a human principal")
         if self.approver.tenant != self.intent.tenant:

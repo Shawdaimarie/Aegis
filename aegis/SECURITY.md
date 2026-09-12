@@ -74,3 +74,7 @@ asymmetric verification so authorization services cannot also mint authority.
 
 See [`docs/THREAT_MODEL_AGENT_IDENTITY.md`](docs/THREAT_MODEL_AGENT_IDENTITY.md)
 for detailed abuse cases, assumptions, and production migration requirements.
+
+## Updated authority boundary
+
+See [authenticated human approval](docs/HUMAN_APPROVAL_BOUNDARY.md) for the enforced separate-credential path, fixed service identity, and deployment limitations. CodeQL results are retained as private CI artifacts; managed dashboard upload is not enabled.

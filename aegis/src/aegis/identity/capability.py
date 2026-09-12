@@ -16,15 +16,18 @@ from aegis.core.errors import IntegrityError
 from aegis.core.hashing import canonical_json
 from aegis.identity.models import CapabilityGrant
 
-TOKEN_PREFIX = "aegis1"
+ENVELOPE_PREFIX = "aegis1"
 MIN_SIGNING_KEY_BYTES = 32
+ENVELOPE_PARTS = 4
 
 
 def _b64url_encode(data: bytes) -> str:
+    """Encode envelope bytes without optional base64 padding."""
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
 def _b64url_decode(value: str) -> bytes:
+    """Decode an envelope segment and reject malformed base64."""
     padding = "=" * (-len(value) % 4)
     try:
         return base64.b64decode(value + padding, altchars=b"-_", validate=True)
@@ -33,6 +36,7 @@ def _b64url_decode(value: str) -> bytes:
 
 
 def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Reject duplicate JSON keys so signed claims have one interpretation."""
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
@@ -74,12 +78,7 @@ def validate_monotonic_delegation(parent: CapabilityGrant, child: CapabilityGran
     )
     if broadens_resource:
         failures.append("resources")
-    if child.not_before < parent.not_before:
-        failures.append("not-before time")
-    if child.expires_at > parent.expires_at:
-        failures.append("expiration time")
-    if child.max_uses > parent.max_uses:
-        failures.append("use budget")
+    failures.extend(_delegation_budget_failures(parent, child))
     if parent.requires_approval and not child.requires_approval:
         failures.append("approval requirement")
     for key, expected in parent.context_constraints.items():
@@ -89,6 +88,18 @@ def validate_monotonic_delegation(parent: CapabilityGrant, child: CapabilityGran
         failures.append("delegation depth")
     if failures:
         raise ValueError("delegation broadens parent authority: " + ", ".join(failures))
+
+
+def _delegation_budget_failures(parent: CapabilityGrant, child: CapabilityGrant) -> list[str]:
+    """Check time and use budgets without changing any authority."""
+    failures: list[str] = []
+    if child.not_before < parent.not_before:
+        failures.append("not-before time")
+    if child.expires_at > parent.expires_at:
+        failures.append("expiration time")
+    if child.max_uses > parent.max_uses:
+        failures.append("use budget")
+    return failures
 
 
 class CapabilityCodec:
@@ -116,14 +127,14 @@ class CapabilityCodec:
             raise ValueError("grant key_id does not match codec key_id")
         payload = canonical_json(grant.model_dump(mode="json")).encode("utf-8")
         encoded = _b64url_encode(payload)
-        signed = f"{TOKEN_PREFIX}.{self.key_id}.{encoded}".encode("ascii")
+        signed = f"{ENVELOPE_PREFIX}.{self.key_id}.{encoded}".encode("ascii")
         signature = _b64url_encode(hmac.new(self._key, signed, hashlib.sha256).digest())
         return signed.decode("ascii") + "." + signature
 
     def decode(self, token: str) -> CapabilityGrant:
         """Validate the signature and return a strict capability grant."""
         parts = token.split(".")
-        if len(parts) != 4 or parts[0] != TOKEN_PREFIX:
+        if len(parts) != ENVELOPE_PARTS or parts[0] != ENVELOPE_PREFIX:
             raise IntegrityError("capability token has an unsupported format")
         prefix, key_id, encoded, signature = parts
         if key_id != self.key_id:
