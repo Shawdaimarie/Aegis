@@ -2,6 +2,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const switches = { automation_enabled: $("automation-switch"), require_human_approval: $("approval-switch") };
+  const roleLabel = (role) => ({ admin: "Governance Admin", user: "Authorized User", authorized_personnel: "Authorized Personnel" })[role] || "Unrecognized role";
   let credential = "", current = null, busy = false, generation = 0;
 
   function render() {
@@ -28,7 +29,7 @@
       const changed = ["automation_enabled", "require_human_approval"].filter(name => event.before[name] !== event.after[name]);
       const names = { automation_enabled: "Automation", require_human_approval: "Human approval" };
       const details = changed.map(name => `${names[name]} ${event.after[name] ? "on" : "off"}`).join(", ") || "Settings reaffirmed";
-      li.textContent = `${event.at} · ${event.actor} (${event.role}) · ${details} · ${event.reason}`;
+      li.textContent = `${event.at} · ${event.actor} (${roleLabel(event.role)}) · ${details} · ${event.reason}`;
       $("control-history").append(li);
     }
     if (!events.length) { const li = document.createElement("li"); li.textContent = "No changes recorded."; $("control-history").append(li); }
@@ -42,11 +43,11 @@
     credential = $("control-token").value.trim(); $("control-token").value = "";
     current = null; busy = true; render();
     try {
-      if (!credential) throw new Error("Enter your personal control credential.");
+      if (!credential) throw new Error("Enter your governance access credential.");
       const data = await request("/v1/controls");
       if (epoch !== generation) return;
       current = data;
-      $("control-status").textContent = `${data.subject} · ${data.role} · Tenant: ${data.settings.tenant}`;
+      $("control-status").textContent = `${data.subject} · ${roleLabel(data.role)} · Tenant: ${data.settings.tenant}`;
       await refreshHistory(epoch);
     } catch (error) {
       if (epoch === generation) { credential = ""; $("control-status").textContent = error.message; }

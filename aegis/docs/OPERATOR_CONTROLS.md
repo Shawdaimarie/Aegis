@@ -1,6 +1,6 @@
-# Independent human controls
+# Admin Governance controls
 
-The console at `/console/` has two independent switches, saved per tenant:
+The **Admin Governance** panel at `/console/` has two independent switches, saved per tenant:
 
 | Switch | On | Off | New-tenant default |
 | --- | --- | --- | --- |
@@ -16,6 +16,10 @@ or external systems that do not call this API. Issuance, inspection and revocati
 remain available while paused. Direct library callers remain trusted integration code.
 
 ## Who can use them
+
+The interface displays **Governance Admin**, **Authorized User**, and **Authorized Personnel**.
+These are display names for the existing `admin`, `user`, and `authorized_personnel` roles.
+Names do not grant additional authority. See [engineering principles](GOVERNANCE_PRINCIPLES.md).
 
 Operators are registered in trusted server configuration, never by a request body.
 Each identity belongs to exactly one tenant. An admin can change both switches in
