@@ -1,6 +1,7 @@
 # Admin Governance: engineering and stewardship principles
 
-Admin Governance names the human authority layer of Aegis. Its purpose is to keep
+Sentinal is the product name. Admin Governance names its human authority panel.
+The Aegis repository supplies the underlying governance implementation. Its purpose is to keep
 power explicit, actions accountable, and future changes reviewable. The foundation
 should support measured growth through maintainable interfaces and verified changes.
 This is a design charter, not a claim of university affiliation, certification,
