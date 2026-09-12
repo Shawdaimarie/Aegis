@@ -31,7 +31,10 @@ jobs:
         with:
           upload: false
           output: codeql-results
+      - name: Require a complete scan with no reported findings
+        run: python .github/check_codeql_results.py codeql-results
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
         with:
           name: codeql-results
           path: codeql-results/*.sarif
