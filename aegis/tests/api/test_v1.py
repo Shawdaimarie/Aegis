@@ -94,4 +94,6 @@ def test_console_is_served_with_csp(client):
     r = client.get("/console/")
     assert r.status_code == 200
     assert "Governance console" in r.text
-    assert r.headers["Content-Security-Policy"] == "default-src 'self'"
+    assert r.headers["Content-Security-Policy"] == (
+        "default-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    )
