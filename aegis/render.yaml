@@ -1,4 +1,4 @@
-# Connect the repo in Render; it reads this file. Set AEGIS_API_TOKEN in the dashboard.
+# Connect the repository in Render. Keep generated values private and environment-specific.
 services:
   - type: web
     name: aegis-console
@@ -7,4 +7,6 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: AEGIS_API_TOKEN
+        generateValue: true
+      - key: AEGIS_CAPABILITY_SIGNING_KEY
         generateValue: true

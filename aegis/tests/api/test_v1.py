@@ -9,6 +9,7 @@ H = "sha256:" + "b" * 64
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv("AEGIS_API_TOKEN", "test-token")
+    monkeypatch.setenv("AEGIS_CAPABILITY_SIGNING_KEY", "k" * 32)
     return TestClient(create_app())
 
 
@@ -93,4 +94,6 @@ def test_console_is_served_with_csp(client):
     r = client.get("/console/")
     assert r.status_code == 200
     assert "Governance console" in r.text
-    assert r.headers["Content-Security-Policy"] == "default-src 'self'"
+    assert r.headers["Content-Security-Policy"] == (
+        "default-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    )

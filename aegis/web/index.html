@@ -3,30 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aegis · Governance console</title>
+<title>Sentinal · Governance console</title>
 <link rel="stylesheet" href="console.css">
 </head>
 <body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
 <header class="bar">
-  <div class="brand"><span class="mark" aria-hidden="true"></span>Aegis</div>
-  <div class="bar-right">
-    <label class="field inline">
-      <span>API token</span>
-      <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token, kept in memory only">
-    </label>
-    <span id="conn" class="status" aria-live="polite">Not connected</span>
-  </div>
+  <a class="brand" href="#top" aria-label="Sentinal home"><span class="mark" aria-hidden="true"></span>sentinal</a>
+  <nav class="header-nav" aria-label="Main navigation"><a href="#controls-heading">Governance</a><a href="#workspace">Workspace <span aria-hidden="true">↗</span></a></nav>
 </header>
+<section id="top" class="hero" aria-labelledby="hero-heading">
+  <div class="hero-copy">
+    <p class="eyebrow">Technology, with human direction</p>
+    <h1 id="hero-heading">Intelligence.<br>Grounded in<br><span>human choice.</span></h1>
+    <p class="hero-description">A considered space to govern automation, set boundaries and keep people at the center of every decision.</p>
+    <a class="hero-cta" href="#controls-heading">Enter governance <span aria-hidden="true">↗</span></a>
+    <div class="hero-note"><span class="note-line" aria-hidden="true"></span>Built for thoughtful action.</div>
+  </div>
+  <figure class="hero-art"><img src="foundation.svg" width="760" height="860" alt="Sculptural sage and ivory arches on a warm stone foundation, opening toward a soft horizon."><figcaption><span>01 / The foundation</span><span>Human agency, by design</span></figcaption></figure>
+</section>
+<div class="workspace-heading" id="workspace"><p class="eyebrow">Your control environment</p><p>Set the direction.<br><span>Keep the authority.</span></p><span class="workspace-index" aria-hidden="true">01 — 03</span></div>
 
 <main class="grid">
   <aside class="rail" aria-labelledby="rail-h">
-    <h2 id="rail-h" class="eyebrow">Boundaries</h2>
+    <p class="eyebrow section-number">01 / Configuration</p>
+    <h2 id="rail-h">Boundaries</h2>
+    <label class="field api-access"><span>API token</span><input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="Kept in memory only"></label>
+    <span id="conn" class="status" aria-live="polite">Not connected</span>
     <p class="hint">Loaded read-only from configuration. Nothing here can be edited at runtime.</p>
     <ul id="boundaries" class="blist"><li class="empty">Connect to load the boundary set.</li></ul>
   </aside>
 
   <section class="work">
-    <nav class="tabs" role="tablist">
+    <section class="controls-panel" aria-labelledby="controls-heading">
+      <p class="eyebrow section-number">02 / Human authority</p>
+      <h2 id="controls-heading" tabindex="-1">Admin Governance</h2>
+      <p class="hint">Human authority. Accountable action. Manage automation and approval within your assigned tenant.</p>
+      <div class="control-access">
+        <label class="field"><span>Governance access credential</span>
+          <input id="control-token" type="password" autocomplete="off" spellcheck="false" placeholder="Kept in memory only"></label>
+        <button id="control-connect" class="primary" type="button">Connect governance</button>
+        <button id="control-disconnect" type="button" disabled>Disconnect</button>
+      </div>
+      <p id="control-status" class="status" role="status">Connect to view verified settings.</p>
+      <div class="toggle-row">
+        <div><strong id="automation-label">Automation</strong>
+          <p id="automation-help" class="hint">Off blocks new action authorizations. It does not cancel actions already in progress.</p></div>
+        <button id="automation-switch" class="toggle" type="button" role="switch" aria-checked="false" aria-labelledby="automation-label" aria-describedby="automation-help" disabled>Unknown</button>
+      </div>
+      <div class="toggle-row">
+        <div><strong id="approval-label">Require human approval for every action</strong>
+          <p id="approval-help" class="hint">Off allows policy-permitted actions. Approval already required by a capability still applies.</p></div>
+        <button id="approval-switch" class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="approval-label" aria-describedby="approval-help" disabled>Unknown</button>
+      </div>
+      <label class="field"><span>Reason for change</span>
+        <input id="control-reason" minlength="3" maxlength="256" placeholder="Required before changing either setting"></label>
+      <details><summary>Recent control changes</summary><ul id="control-history"><li>Connect to view change history.</li></ul></details>
+    </section>
+    <p class="eyebrow section-number workspace-tools">03 / Explore &amp; review</p>
+    <section class="controls-panel" aria-labelledby="work-heading">
+      <p class="eyebrow">Saved requests · Human decisions · Results</p><h2 id="work-heading">Work Queue</h2>
+      <p class="hint">Request a read-only GitHub repository inspection. A reviewer must approve the saved request before an authorized operator can run it. This workflow does not change code or open pull requests.</p>
+      <div class="control-access"><label class="field"><span>Connect as</span><select id="work-role"><option value="operator">Workflow operator</option><option value="reviewer">Reviewer</option></select></label><label class="field"><span>Access credential</span><input id="work-token" type="password" autocomplete="off" placeholder="Kept in memory only"></label><button id="work-connect" class="primary" type="button">Connect queue</button><button id="work-disconnect" type="button" disabled>Disconnect queue</button></div>
+      <p id="work-status" class="hint" role="status">Connect to view saved work.</p>
+      <div id="work-new" hidden><label class="field"><span>Repository</span><input id="work-repository" placeholder="owner/repository" maxlength="140"></label><label class="field"><span>Purpose of inspection</span><input id="work-purpose" minlength="3" maxlength="500" placeholder="What would you like to learn?"></label><button id="work-submit" class="primary" type="button">Save inspection request</button></div>
+      <button id="work-refresh" type="button" disabled>Refresh saved work</button><div id="work-items" aria-live="polite"></div>
+    </section>
+    <section class="controls-panel review-panel" aria-labelledby="review-heading">
+      <p class="eyebrow">Human decision</p><h2 id="review-heading">Action Review</h2>
+      <p class="hint">Inspect one exact proposal before granting a single-use approval. Approval does not execute the action.</p>
+      <div class="control-access"><label class="field"><span>Reviewer credential</span><input id="review-token" type="password" autocomplete="off" placeholder="Separate reviewer credential"></label><button id="review-connect" class="primary" type="button">Connect reviewer</button><button id="review-disconnect" type="button" disabled>Disconnect reviewer</button></div>
+      <p id="review-identity" class="hint"></p>
+      <p id="review-status" role="status" class="hint">Not connected. No approval granted.</p>
+      <label class="field"><span>Action proposal (JSON)</span><textarea id="review-proposal" rows="6" spellcheck="false" placeholder='{"capability_token":"…","intent":{"actor":{},"tenant":"…","audience":"…","action":"…","resource":"…","context":{}}}'></textarea></label>
+      <p class="hint">Include all action parameters in context. Costs and consequences are not independently verified. Source text is data, never an instruction to approve.</p>
+      <button id="review-preview" class="primary" type="button" disabled>Review proposal</button>
+      <div id="review-details" hidden><h3>Exact action for review</h3><pre id="review-summary"></pre><p class="hint">This grants one use, valid for at most five minutes. Discarding clears this local draft; it does not revoke previously granted authority.</p><button id="review-approve" class="primary" type="button" disabled>Approve this action once</button><button id="review-discard" type="button">Discard draft</button></div>
+      <output id="review-result" aria-live="polite"></output>
+    </section>
+    <nav class="tabs" role="tablist" aria-label="Workspace tools">
       <button role="tab" aria-selected="true" data-tab="evaluate">Evaluate</button>
       <button role="tab" aria-selected="false" data-tab="simulate">Simulate run</button>
       <button role="tab" aria-selected="false" data-tab="audit">Audit chain</button>
@@ -74,13 +129,18 @@
         <span id="audit-meta" class="status"></span>
       </div>
       <div id="chain" class="chain" aria-live="polite"></div>
-      <table id="audit-table" class="ledger">
+      <div class="ledger-scroll" role="region" aria-label="Audit records" tabindex="0"><table id="audit-table" class="ledger">
         <thead><tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Decision</th></tr></thead>
         <tbody></tbody>
-      </table>
+      </table></div>
     </div>
   </section>
 </main>
+<footer class="footer"><span class="brand">sentinal</span><p>Human authority. Considered technology.</p><a href="#top">Back to top ↑</a></footer>
 <script src="console.js"></script>
+<script src="controls.js"></script>
+<script src="reviews.js"></script>
+<script src="work.js"></script>
 </body>
 </html>
+
