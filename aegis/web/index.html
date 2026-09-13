@@ -61,6 +61,14 @@
       <details><summary>Recent control changes</summary><ul id="control-history"><li>Connect to view change history.</li></ul></details>
     </section>
     <p class="eyebrow section-number workspace-tools">03 / Explore &amp; review</p>
+    <section class="controls-panel" aria-labelledby="work-heading">
+      <p class="eyebrow">Saved requests · Human decisions · Results</p><h2 id="work-heading">Work Queue</h2>
+      <p class="hint">Request a read-only GitHub repository inspection. A reviewer must approve the saved request before an authorized operator can run it. This workflow does not change code or open pull requests.</p>
+      <div class="control-access"><label class="field"><span>Connect as</span><select id="work-role"><option value="operator">Workflow operator</option><option value="reviewer">Reviewer</option></select></label><label class="field"><span>Access credential</span><input id="work-token" type="password" autocomplete="off" placeholder="Kept in memory only"></label><button id="work-connect" class="primary" type="button">Connect queue</button><button id="work-disconnect" type="button" disabled>Disconnect queue</button></div>
+      <p id="work-status" class="hint" role="status">Connect to view saved work.</p>
+      <div id="work-new" hidden><label class="field"><span>Repository</span><input id="work-repository" placeholder="owner/repository" maxlength="140"></label><label class="field"><span>Purpose of inspection</span><input id="work-purpose" minlength="3" maxlength="500" placeholder="What would you like to learn?"></label><button id="work-submit" class="primary" type="button">Save inspection request</button></div>
+      <button id="work-refresh" type="button" disabled>Refresh saved work</button><div id="work-items" aria-live="polite"></div>
+    </section>
     <section class="controls-panel review-panel" aria-labelledby="review-heading">
       <p class="eyebrow">Human decision</p><h2 id="review-heading">Action Review</h2>
       <p class="hint">Inspect one exact proposal before granting a single-use approval. Approval does not execute the action.</p>
@@ -132,6 +140,7 @@
 <script src="console.js"></script>
 <script src="controls.js"></script>
 <script src="reviews.js"></script>
+<script src="work.js"></script>
 </body>
 </html>
 

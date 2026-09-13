@@ -32,6 +32,7 @@ class ControlOperator(BaseModel):
     role: Literal["admin", "user", "authorized_personnel"]
     token_sha256: str = Field(pattern=r"^[0-9a-f]{64}$", repr=False)
     permissions: tuple[SettingName, ...] = ()
+    workflows: tuple[Literal["github.inspect"], ...] = ()
 
     def allowed_settings(self) -> tuple[SettingName, ...]:
         """Admins manage both switches within their own tenant."""

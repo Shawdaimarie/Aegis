@@ -19,6 +19,7 @@ from aegis.api.v1.controls import control_store, install_control_routes
 from aegis.api.v1.reviews import install_review_routes
 from aegis.api.v1.security import Principal as ApiPrincipal
 from aegis.api.v1.security import new_request_id, require_approver, require_principal
+from aegis.api.v1.work import install_work_routes
 from aegis.core.errors import (
     ConfigurationError,
     GovernanceViolationError,
@@ -121,7 +122,7 @@ def _install_guard(app: FastAPI) -> None:
         response = await call_next(request)
         response.headers["X-Request-ID"] = rid
         response.headers["Content-Security-Policy"] = "default-src 'self'"
-        if request.url.path.startswith(("/v1/controls", "/v1/reviews", "/console")):
+        if request.url.path.startswith(("/v1/controls", "/v1/reviews", "/v1/work", "/console")):
             response.headers["Content-Security-Policy"] += (
                 "; frame-ancestors 'none'; base-uri 'none'"
             )
@@ -261,6 +262,7 @@ def create_app(
 def _install_identity_routes(app: FastAPI, identity: IdentityControlPlane, audit: AuditLog) -> None:
     """Install administrative routes with a separate authenticated human approval path."""
     install_review_routes(app, identity)
+    install_work_routes(app)
 
     @app.post("/v1/identity/capabilities", status_code=status.HTTP_201_CREATED)
     async def issue_capability(body: IssueCapabilityRequest, principal: Auth) -> dict[str, object]:

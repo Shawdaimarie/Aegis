@@ -204,3 +204,9 @@ button.primary, #audit-refresh, #control-disconnect { min-height:43px; padding:1
 .review-panel pre { white-space:pre-wrap; overflow-wrap:anywhere; }
 #review-result { display:block; margin-top:16px; overflow-wrap:anywhere; }
 #review-discard, #review-disconnect { border:1px solid var(--ink-3); border-radius:24px; padding:10px 17px; background:var(--panel); }
+
+#work-new { display:grid; gap:12px; margin:20px 0; } #work-new[hidden] { display:none; }
+#work-refresh, #work-disconnect, .work-card button { min-height:44px; padding:10px 16px; border:1px solid var(--ink-3); border-radius:24px; background:var(--panel); margin:8px 8px 8px 0; }
+.work-card { padding:20px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+.work-card h3 { font-weight:500; margin:12px 0; }.work-card p { margin:8px 0; font-size:13px; }
+.work-card pre { white-space:pre-wrap; overflow-wrap:anywhere; }
