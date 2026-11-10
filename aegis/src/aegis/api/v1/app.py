@@ -86,7 +86,6 @@ def create_app(governance_path: Path | None = None) -> FastAPI:
     app = FastAPI(
         title="Aegis Platform API",
         version=__version__,
-        openapi_version="3.1.0",
         docs_url="/v1/docs",
         openapi_url="/v1/openapi.json",
     )
